@@ -30,9 +30,6 @@ module.exports = async({getNamedAccounts, deployments}) => {
     const idToken = await IDToken.attach(idContract.address)
     log(`001- Proxy deployed to: ${idToken.address}`)
    
-    const symbol = await idToken.symbol()
-    log(`symbol is ${symbol}`)
-
     await idToken.grantRole(DEFAULT_ADMIN_ROLE, admin)
     const checkAdmin = await idToken.hasRole(DEFAULT_ADMIN_ROLE, admin)
     const checkUpgrader = await idToken.hasRole(UPGRADER_ROLE, upgrader)

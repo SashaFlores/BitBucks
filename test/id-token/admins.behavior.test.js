@@ -86,24 +86,26 @@ describe('admins behavior test', function() {
 
         it('admin or upgrader only can pause', async() =>{
             await idToken.pauseOps()
-            expect(idToken.pauseOps({ from: upgrader })).to.emit(idToken, 'Paused').withArgs(upgrader)
+            expect(idToken.connect(upgrader).pauseOps()).to.emit(idToken, 'Paused').withArgs(upgrader)
             expect(await idToken.paused()).to.equal(true)
         })
 
         it('can not pause if already paused', async() => {
+            await idToken.pauseOps()
             expect(idToken.pauseOps()).to.be.revertedWith('Pausable: paused')
             expect(await idToken.paused()).to.equal(true)
         })
 
         it('unpause fails if not called by admin or upgrader', async() => {
+            await idToken.pauseOps()
             expect(idToken.connect(other).unpauseOps()).to.be.revertedWith('missing role')
-            expect(await idToken.unpauseOps()).to.equal(false)
+            expect(await idToken.paused()).to.equal(true)
         })
 
         it('unpause called by admins', async() => {
-            await idToken.unpauseOps()
+            await idToken.pauseOps()
             expect(idToken.unpauseOps({ from: admin })).to.emit(idToken, 'Unpaused').withArgs(admin)
-            expect(await idToken.unpauseOps()).to.equal(true)
+            expect(await idToken.paused()).to.equal(false)
         })
 
         it('unpause fails if unpaused', async() => {
@@ -111,23 +113,26 @@ describe('admins behavior test', function() {
         })
     })
 
-    // describe('revoke roles', function() {
-    //     it('only admin can revoke roles', async function() {
-    //         expect(await idToken.hasRole(DEFAULT_ADMIN_ROLE, admin)).to.equal(true)
-    //         await expect(idToken.revokeRole(MINTER_ROLE, minter)).to.emit(idToken, 'RoleRevoked')
-    //         .withArgs(MINTER_ROLE, minter, admin)
-    //         expect(await idToken.hasRole(MINTER_ROLE, minter)).to.equal(false)
-    //         await expect(idToken.revokeRole(UPGRADER_ROLE, upgrader, { from: other }))
-    //         .to.be.revertedWith('AccessControl: account ${other} is missing ${DEFAULT_ADMIN_ROLE}')
-    //         expect(await idToken.hasRole(UPGRADER_ROLE, upgrader)).to.equal(true)
-    //         await expect(idToken.revokeRole(DEFAULT_ADMIN_ROLE, admin)).to.emit(idToken, 'RoleRevoked')
-    //         .withArgs(DEFAULT_ADMIN_ROLE, admin, admin)
-    //         expect(await idToken.hasRole(DEFAULT_ADMIN_ROLE, admin)).to.equal(false)
-    //     })
-    // }) 
+    describe('revoke roles', function() {
+        it('only admin can revoke roles', async function() {
+            expect(await idToken.hasRole(DEFAULT_ADMIN_ROLE, admin)).to.equal(true)
+
+            expect(idToken.revokeRole(MINTER_ROLE, minter)).to.emit(idToken, 'RoleRevoked')
+            .withArgs(MINTER_ROLE, minter, admin)
+            expect(await idToken.hasRole(MINTER_ROLE, minter)).to.equal(false)
+
+            expect(idToken.revokeRole(UPGRADER_ROLE, upgrader, { from: other }))
+            .to.be.revertedWith('AccessControl: account ${other} is missing ${DEFAULT_ADMIN_ROLE}')
+            expect(await idToken.hasRole(UPGRADER_ROLE, upgrader)).to.equal(true)
+
+            expect(idToken.revokeRole(DEFAULT_ADMIN_ROLE, admin)).to.emit(idToken, 'RoleRevoked')
+            .withArgs(DEFAULT_ADMIN_ROLE, admin, admin)
+            expect(await idToken.hasRole(DEFAULT_ADMIN_ROLE, admin)).to.equal(false)
+        })
+    }) 
 
     // renounce test
-    
+
 
 })
 
