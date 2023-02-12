@@ -17,7 +17,7 @@ contract ERC1967Proxy is Proxy, ERC1967Upgrade {
     constructor(address _logic, bytes memory _data) payable {
         /**
          * https://docs.soliditylang.org/en/latest/control-structures.html#error-handling-assert-require-revert-and-exceptions
-         * assert: 0x22: If you access a storage byte array that is incorrectly encoded.
+         * assert: Panic exception code 0x22: If you access a storage byte array that is incorrectly encoded.
          * 
          * see ERC1976Upgradeable
          * keccak-256 hash of "eip1967.proxy.implementation" subtracted by 1

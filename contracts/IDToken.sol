@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: GPL-3.0
-pragma solidity >=0.8.17 <0.9.0;
+pragma solidity >=0.8.10 <0.9.0;
 
 import '@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
@@ -30,6 +30,8 @@ contract IDToken is Initializable, ERC1155Upgradeable, AccessControlUpgradeable,
     uint256 public constant US_INVERSTOR = 4;
     uint256 public constant INT_INVESTOR = 5;
 
+    event MinterSet(address indexed minter, uint256 id);
+
 
     // solhint-disable-next-line func-name-mixedcase
     function __IDToken_init(address upgrader, string memory uri_) external initializer virtual {
@@ -39,10 +41,6 @@ contract IDToken is Initializable, ERC1155Upgradeable, AccessControlUpgradeable,
         __AccessControl_init();
         __UUPSUpgradeable_init();
         __Pausable_init();
-
-        _setRoleAdmin(MINTER_ROLE, DEFAULT_ADMIN_ROLE);
-        _setRoleAdmin(UPGRADER_ROLE, DEFAULT_ADMIN_ROLE);
-
 
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
         _setupRole(UPGRADER_ROLE, upgrader);
@@ -90,14 +88,19 @@ contract IDToken is Initializable, ERC1155Upgradeable, AccessControlUpgradeable,
         _setURI(uri_);
     }
 
+    // change to error => more gas efficient
     function grantMinterRole(address minter, uint256 id) public virtual onlyRole(DEFAULT_ADMIN_ROLE) whenNotPaused returns(bool) {
         _nonZeroAddress(minter);
         _availIds(id);
-        if(balanceOf(minter, id) == 0) {
-            _grantRole(MINTER_ROLE, minter);
-        } else {
-            revert('token either set or minted');      
-        } 
+        require(balanceOf(minter, id) == 0, 'token either set or minted');
+        _grantRole(MINTER_ROLE, minter);
+        // if(balanceOf(minter, id) == 0) {
+        //     _grantRole(MINTER_ROLE, minter);
+        // } else {
+        //     revert('token either set or minted');      
+        // } 
+        // return true;
+        emit MinterSet(minter, id);
         return true;
     }
 
@@ -131,8 +134,8 @@ contract IDToken is Initializable, ERC1155Upgradeable, AccessControlUpgradeable,
     function _authorizeUpgrade(address newImplementation) internal virtual override onlyRole(UPGRADER_ROLE) {
         _nonZeroAddress(newImplementation);
         require(AddressUpgradeable.isContract(newImplementation), 'new implementation not contract');
+        require(paused(), 'pause ops before upgrade');
     }
-
 
     function _availIds(uint256 id) private view {
         require(id <= availIds.length, 'unavailable id yet');

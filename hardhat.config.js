@@ -5,6 +5,7 @@ require('@nomiclabs/hardhat-solhint')
 require('solidity-coverage')
 require('hardhat-gas-reporter')
 require('hardhat-deploy')
+require('@nomicfoundation/hardhat-chai-matchers')
 
 
 module.exports = {
@@ -13,7 +14,7 @@ module.exports = {
     hardhat: {
       chainId: 31337
     },
-    localhost: {
+    localDev: {
       url: `HTTP://127.0.0.1:8545`,
       chainId: 1337,
       saveDeployments: true,
@@ -53,7 +54,7 @@ module.exports = {
     sepolia: {
       url: `https://sepolia.infura.io/v3/${process.env.INFURA_API_KEY}`,
       chainId: 11155111,
-      accounts: [`0x${process.env.ADMIN_KEY}`, `0x${process.env.UPGRADER_KEY}`],
+      accounts: [`0x${process.env.ADMIN_KEY}`, `0x${process.env.UPGRADER_KEY}`, `0x${process.env.OTHER_KEY}`, `0x${process.env.MINTER_KEY}`],
       blockConfirmations: 5,
       timeout: 600000,
       saveDeployments: true,
@@ -77,14 +78,20 @@ module.exports = {
   namedAccounts: {
     admin: {
       default: 0,
-      localhost: 0,
-      sepolia: 0
+      sepolia: process.env.ADMIN
     },
     upgrader: {
       default: 1,
-      localhost: 1,
-      sepolia: 1
+      sepolia: process.env.UPGRADER
     },
+    other: {
+      default: 2,
+      sepolia: process.env.OTHER
+    },
+    minter: {
+      default: 3,
+      sepolia: process.env.MINTER
+    }
   },
   gasReporter: {
     enabled: true,
@@ -94,7 +101,7 @@ module.exports = {
     currency: "USD", 
   },
   solidity: {
-    version: '0.8.17',
+    version: '0.8.10',
     settings: {
       optimizer: {
         enabled: true,
