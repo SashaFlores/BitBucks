@@ -20,7 +20,6 @@ describe('admins behavior test', function() {
         other = (await getNamedAccounts()).other
         minter = (await getNamedAccounts()).minter
         idToken = await ethers.getContract('IDToken', admin)
-        //console.log(`ID Token Address ${idToken.address}`)
     })
 
     describe('check admins', function() {
@@ -54,10 +53,13 @@ describe('admins behavior test', function() {
             expect(await idToken.hasRole(MINTER_ROLE, minter)).to.equal(true)
             expect(idToken.grantRole(DEFAULT_ADMIN_ROLE, admin)).to.emit(idToken, 'RoleGranted')
             .withArgs(DEFAULT_ADMIN_ROLE, admin, admin)
+
             expect(idToken.grantRole(UPGRADER_ROLE, upgrader)).to.emit(idToken, 'RoleGranted')
             .withArgs(UPGRADER_ROLE, upgrader, admin)
+
             expect(idToken.grantRole(MINTER_ROLE, minter)).to.emit(idToken, 'RoleGranted')
             .withArgs(MINTER_ROLE, minter, admin)
+            
             expect(idToken.grantMinterRole(minter, [availIds[0]])).to.emit(idToken, 'MinterSet')
             .withArgs(minter, [availIds[0]])
         })
