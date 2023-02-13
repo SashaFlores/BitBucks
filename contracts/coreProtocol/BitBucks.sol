@@ -69,7 +69,7 @@ contract Ampersand is
     function mint(address safe, uint256 amount) public virtual override nonReentrant {
         require(AddressUpgradeable.isContract(safe), "safe is not contract");
         require(safe != address(0), "safe is zero address");
-        require(IERC1155Modified(VCT).isVerified(msg.sender), "Ampersand: unverified account");
+        //require(IERC1155Modified(VCT).isVerified(msg.sender), "Ampersand: unverified account");
         require(isMinter(msg.sender), "Ampersand: unauthorized minter");
         uint256 toMint = mintAllowances[msg.sender];
         require(toMint == amount, "Ampersand: mint exact allowance");
