@@ -1,18 +1,18 @@
 //SPDX-License-Identifier: GPL-3.0
 pragma solidity >=0.8.10 <0.9.0;
 
+import './MinterManager.sol';
+import './interfaces/IBitBucks.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import '@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol';
-import './MinterManager.sol';
-import './interfaces/IBitBucks.sol';
 
 
 contract Ampersand is 
     Initializable,
-    IApmersand,
+    IBitBucks,
     MinterManager,
     ERC20Upgradeable,
     PausableUpgradeable,
