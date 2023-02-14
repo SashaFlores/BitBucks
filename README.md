@@ -8,6 +8,10 @@ The aim of this project is to tokenize everything that worth value, identify ind
 * *hardhat-deploy*
 * *hardhat-deploy-ethers*
 * *hardhat-chai-matchers*
+* *hardhat-gas-reporter*
+* *hardhat-solhint*
+* *hardhat-network-helpers*
+* *prettier-plugin-solidity*
 * *Solidity Coverage*
 * *MythX*
 * *Slither*
