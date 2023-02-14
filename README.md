@@ -21,7 +21,7 @@ The aim of this project is to tokenize everything that worth value, identify ind
 
 ## *Stable Token 'BitBucks':*  
 
-*an ERC20 Token*
+*It's based on segregation of duties; contract owner will assign a manager to each minter, the manager responsibility is to determine the exact amount that minter is allowed to mint, with preserving the right to the owner to audit manager &/or minter*
 
 ## *To Run What have been achieved so far after cloning the repository*
 
