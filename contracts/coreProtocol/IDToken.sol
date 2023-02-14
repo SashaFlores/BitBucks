@@ -7,15 +7,16 @@ import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol'
 import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol';
+import './interfaces/IDTokenInterface.sol';
 
 // solhint-disable-next-line contract-name-camelcase
-contract IDToken is Initializable, ERC1155Upgradeable, AccessControlUpgradeable, UUPSUpgradeable, PausableUpgradeable {
+contract IDToken is Initializable, IDTokenInterface, ERC1155Upgradeable, AccessControlUpgradeable, UUPSUpgradeable, PausableUpgradeable {
 
     using AddressUpgradeable for address;
 
     uint256[5] private availIds;
     mapping(uint256 => uint256) private supply;
-    mapping(address => uint256) private nonces;
+    mapping(address => bool) private verified;
 
 
     /**
@@ -30,11 +31,10 @@ contract IDToken is Initializable, ERC1155Upgradeable, AccessControlUpgradeable,
     uint256 public constant US_INVERSTOR = 4;
     uint256 public constant INT_INVESTOR = 5;
 
-    event MinterSet(address indexed minter, uint256 id);
-
+    
 
     // solhint-disable-next-line func-name-mixedcase
-    function __IDToken_init(address upgrader, string memory uri_) external initializer virtual {
+    function __IDToken_init(address upgrader, string memory uri_) external initializer virtual override{
         _nonZeroAddress(_msgSender());
         _nonZeroAddress(upgrader);
         __ERC1155_init(uri_);
@@ -66,8 +66,12 @@ contract IDToken is Initializable, ERC1155Upgradeable, AccessControlUpgradeable,
         return '1.0.0';
     }
 
-    function totalSupply(uint256 id) public view virtual returns(uint256) {
+    function totalSupply(uint256 id) public view virtual override returns(uint256) {
         return supply[id];
+    }
+
+    function isVerified(address account) public view virtual override returns(bool) {
+        return verified[account];
     }
 
     function pauseOps() public virtual {
@@ -80,16 +84,16 @@ contract IDToken is Initializable, ERC1155Upgradeable, AccessControlUpgradeable,
         _unpause();
     }
 
-    function exists(uint256 id) external view virtual returns(bool) {
+    function exists(uint256 id) external view virtual override returns(bool) {
         return IDToken.totalSupply(id) > 0;
     }
 
-    function updateURI(string memory uri_) external virtual onlyRole(DEFAULT_ADMIN_ROLE) whenNotPaused {
+    function updateURI(string memory uri_) external virtual override onlyRole(DEFAULT_ADMIN_ROLE) whenNotPaused {
         _setURI(uri_);
     }
 
     // change to error => more gas efficient
-    function grantMinterRole(address minter, uint256 id) public virtual onlyRole(DEFAULT_ADMIN_ROLE) whenNotPaused returns(bool) {
+    function grantMinterRole(address minter, uint256 id) public virtual override onlyRole(DEFAULT_ADMIN_ROLE) whenNotPaused returns(bool) {
         _nonZeroAddress(minter);
         _availIds(id);
         require(balanceOf(minter, id) == 0, 'token either set or minted');
@@ -104,13 +108,14 @@ contract IDToken is Initializable, ERC1155Upgradeable, AccessControlUpgradeable,
         return true;
     }
 
-    function mint(uint256 id) public virtual onlyRole(MINTER_ROLE) whenNotPaused {
+    function mint(uint256 id) public virtual override onlyRole(MINTER_ROLE) whenNotPaused {
         require(grantMinterRole(_msgSender(), id), 'unauthorized token id');
         supply[id] ++;
         _mint(_msgSender(), id, 1, '');
+        verified[_msgSender()] = true;
     }
 
-    function burn(uint256 id) public virtual onlyRole(MINTER_ROLE) whenNotPaused {
+    function burn(uint256 id) public virtual override onlyRole(MINTER_ROLE) whenNotPaused {
         _availIds(id);
         _burn(_msgSender(), id, 1);
         supply[id] --;

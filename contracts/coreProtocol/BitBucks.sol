@@ -3,6 +3,7 @@ pragma solidity >=0.8.10 <0.9.0;
 
 import './MinterManager.sol';
 import './interfaces/IBitBucks.sol';
+import './interfaces/IDTokenInterface.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import '@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol';
@@ -10,14 +11,14 @@ import '@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.
 import '@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol';
 
 
-contract Ampersand is 
+contract BitBucks is 
     Initializable,
     IBitBucks,
     MinterManager,
+    UUPSUpgradeable,
     ERC20Upgradeable,
     PausableUpgradeable,
-    ReentrancyGuardUpgradeable,
-    UUPSUpgradeable
+    ReentrancyGuardUpgradeable
  {
 
     using AddressUpgradeable for address;
@@ -25,59 +26,59 @@ contract Ampersand is
     mapping(address => uint256) private mintAllowances;
   
 
-    string private constant _name = "Ampersand";
-    string private constant _symbol = "AND";
+    string private constant _name = 'BitBucks';
+    string private constant _symbol = 'AND';
 
-    address private constant VCT = 0xd9145CCE52D386f254917e481eB44e9943F39138;
+  
+    IDTokenInterface private ID;
 
-
-
-    function __Ampersand_init() public virtual override initializer {
-        __ERC20_init("Ampersand", "AND");
+    function __BitBucks_init(address idContract) public virtual override initializer {
+        __ERC20_init('BitBucks', 'BITS');
         __MinterManager_init();
         __Pausable_init();
         __UUPSUpgradeable_init();
+
+        ID = IDTokenInterface(idContract);
     }
 
 
-    function setAllowance(address minter, uint256 allowance) public virtual override onlyManager(msg.sender, minter) whenNotPaused {
-        require(allowance > 0, "zero allowance");
+    function setAllowance(address minter, uint256 allowance) public virtual override onlyManager(_msgSender(), minter) whenNotPaused {
+        require(allowance > 0, 'BitBucks: zero allowance');
         mintAllowances[minter] = allowance;
-        emit MintAllowance(msg.sender, minter, allowance);
+        emit MintAllowance(_msgSender(), minter, allowance);
     }
 
-    function increaseMintAllowance(address minter, uint256 increase) public virtual override onlyManager(msg.sender, minter) whenNotPaused {
-        require(increase > 0, "new allowance is zero");
+    function increaseMintAllowance(address minter, uint256 increase) public virtual override onlyManager(_msgSender(), minter) whenNotPaused {
+        require(increase > 0, 'BitBucks: new allowance is zero');
         uint256 oldAllowance = mintAllowances[minter];
         uint256 allowance = oldAllowance + increase;
         mintAllowances[minter] = allowance;
-        emit AllowanceIncreased(msg.sender, minter, increase, allowance);
+        emit AllowanceIncreased(_msgSender(), minter, increase, allowance);
     }
 
-    function decareseMinterAllowance(address minter, uint256 decrease) public virtual override onlyManager(msg.sender, minter) whenNotPaused {
-        require(decrease > 0, "decrement is zero");
+    function decareseMinterAllowance(address minter, uint256 decrease) public virtual override onlyManager(_msgSender(), minter) whenNotPaused {
+        require(decrease > 0, 'BitBucks: decrement is zero');
         uint256 currentAllowance = mintAllowances[minter];
         if(currentAllowance >= decrease) {
             uint256 allowance = currentAllowance - decrease;
             mintAllowances[minter] = allowance;
-            emit AllowanceDecreased(msg.sender, minter, decrease, allowance);
+            emit AllowanceDecreased(_msgSender(), minter, decrease, allowance);
         } else {
-            revert("current allowance less than decreasing value");
+            revert('BitBucks: current allowance less than decreasing value');
         }
     }
 
-    function mint(address safe, uint256 amount) public virtual override nonReentrant {
-        require(AddressUpgradeable.isContract(safe), "safe is not contract");
-        require(safe != address(0), "safe is zero address");
-        //require(IERC1155Modified(VCT).isVerified(msg.sender), "Ampersand: unverified account");
-        require(isMinter(msg.sender), "Ampersand: unauthorized minter");
-        uint256 toMint = mintAllowances[msg.sender];
-        require(toMint == amount, "Ampersand: mint exact allowance");
+    function mint(address to, uint256 amount) public virtual override nonReentrant {
+        require(to != address(0), 'BitBucks: unauthorized zero address');
+        require(ID.isVerified(_msgSender()), "BitBucks: unverified account");
+        require(isMinter(_msgSender()), 'BitBucks: unauthorized minter');
+        uint256 toMint = mintAllowances[_msgSender()];
+        require(toMint == amount, 'BitBucks: mint exact allowance');
         unchecked {
-            mintAllowances[msg.sender] = toMint - amount;
+            mintAllowances[_msgSender()] = toMint - amount;
         }
-        _mint(safe, amount);
-        emit Mint(msg.sender, safe, amount);
+        _mint(to, amount);
+        emit Mint(_msgSender(), to, amount);
     }
 
     function minterAllowance(address minter) external view virtual override returns(uint256) {
@@ -85,16 +86,16 @@ contract Ampersand is
     }
 
     function removeMinter(address minter) public virtual override onlyOwner whenNotPaused returns(bool) {
-        require(isMinter(minter), "Ampersand: minter doesnot exist");
+        require(isMinter(minter), 'BitBucks: minter doesnot exist');
         exists[minter] = false;
-        emit MinterRemoved(msg.sender, minter);
+        emit MinterRemoved(_msgSender(), minter);
         return isMinter(minter);
     }
 
-    function burn(address from, uint256 amount) public virtual override onlyOwner {
-        require(amount > 0, "nothing to burn");
+    function burn(address from, uint256 amount) public virtual override onlyManager(_msgSender(), from) {
+        require(amount > 0, 'BitBucks: nothing to burn');
         _burn(from, amount);
-        emit Burn(msg.sender, from, amount);
+        emit Burn(_msgSender(), from, amount);
     }
 
     function pauseOps() public virtual override onlyOwner{
@@ -111,17 +112,16 @@ contract Ampersand is
 
     function _beforeTokenTransfer(address from, address to, uint256 amount) internal virtual override {
         super._beforeTokenTransfer(from, to, amount);
-        require(!paused(), "token transfer paused");
+        require(!paused(), 'BitBucks: token transfer paused');
     }
 
     function _approve(address owner, address spender, uint256 amount) internal virtual override {
         super._approve(owner, spender, amount);
-        require(!paused(), "approvals paused");
+        require(!paused(), 'BitBucks: approvals paused');
     }
-
+    
     function _authorizeUpgrade(address newImplementation) internal virtual override onlyOwner {
-        require(AddressUpgradeable.isContract(newImplementation), "new Implementation must be a contract");
-        require(newImplementation != address(0), "zero address error");
+        require(AddressUpgradeable.isContract(newImplementation), 'BitBucks: new Implementation must be a contract');
+        require(newImplementation != address(0), 'BitBucks: zero address error');
     }
-
 }

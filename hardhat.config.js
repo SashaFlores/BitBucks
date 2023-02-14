@@ -97,7 +97,7 @@ module.exports = {
     enabled: true,
     coinmarketcap: process.env.COINMARKETCAP,
     outputFile: "gasReporter.txt",
-    noColors: true,
+    noColors: false,
     currency: "USD", 
   },
   solidity: {

@@ -1,9 +1,9 @@
 //SPDX-License-Identifier: GPL-3.0
 pragma solidity >=0.8.10 <0.9.0;
 
-import '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
-import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import './interfaces/IMinterManager.sol';
+import '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
+
 
 abstract contract MinterManager is IMinterManager, OwnableUpgradeable {
 
