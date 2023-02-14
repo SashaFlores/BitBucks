@@ -1,13 +1,49 @@
-# Sample Hardhat Project
+# BitBucks
+The aim of this project is to tokenize everything that worth value, identify individuals and enterprises, act as a proof of ownership, split payment, or even track medical records.
 
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, and a script that deploys that contract.
+## *Dependencies:*
 
-Try running some of the following tasks:
+* *Node v18.13.0*
+* *Ethers.js*
+* *hardhat-deploy*
+* *hardhat-deploy-ethers*
+* *hardhat-chai-matchers*
+* *Solidity Coverage*
+* *MythX*
+* *Slither*
+* *hardhat-etherscan*
 
-```shell
-npx hardhat help
-npx hardhat test
-REPORT_GAS=true npx hardhat test
-npx hardhat node
-npx hardhat run scripts/deploy.js
-```
+## *Work In Progress:*
+
+## *IDToken:*
+
+*identify yourself or your business from a range of a predetermined identities*
+
+## *Stable Token 'BitBucks':*  
+
+*an ERC20 Token*
+
+## *To Run What have been achieved so far after cloning the repository*
+
+* *To install dependencies:*
+
+        npm i
+
+* *To deploy:*
+
+    - *default network: hardhat*
+    - *Named Accounts: based on your own set of keys*
+    - *chosen test network: 'sepolia'*
+
+            npx hardhat deploy
+
+
+    - *OR*
+
+            npx hardhat deploy --network networkName
+
+* *To Test:*
+
+        npx hardhat test
+
+
