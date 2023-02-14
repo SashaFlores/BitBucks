@@ -1,18 +1,19 @@
 const {ethers, network } = require('hardhat')
 
 module.exports = async({getNamedAccounts, deployments}) => {
-    const { deploy, log } = deployments;
-    const { admin } = await getNamedAccounts();
+    const { deploy, log, get } = deployments;
+    const { deployer } = await getNamedAccounts();
     console.log({namedAccounts: await getNamedAccounts()})
 
     const networkName = network.name
-    const idToken = await ethers.getContract('IDToken')
+    const idToken = await get('IDToken')
+    console.log(`IDToken Contract address is ${idToken.address}`)
 
     log(`-----Preparing Contracts for Deployment on ${networkName} -------`)
 
     const stableToken = await deploy('BitBucks', {
         contract: 'BitBucks',
-        from: admin,
+        from: deployer,
         args:[],
         log: true,
         proxy: {
@@ -25,14 +26,14 @@ module.exports = async({getNamedAccounts, deployments}) => {
         },
         waitConfirmations: network.config.blockConfirmations || 1
     })
-    const BitBucks = await ethers.getContractFactory('BitBucks', admin)
+    const BitBucks = await ethers.getContractFactory('BitBucks', deployer)
     const bitBucks = await BitBucks.attach(stableToken.address)
-    log(`001- Proxy deployed to: ${bitBucks.address}`)
+    log(`02- BitBucks Proxy deployed at: ${bitBucks.address}`)
    
-    await bitBucks.transferOwnership(admin)
-    const owner = await bitBucks.owner()
-
-    console.log(`Is ${admin} =  ${owner} ?`)
+    await bitBucks.connect(deployer)
+    const contractOwner = await bitBucks.owner()
+    console.log(`Deployer: ${deployer}`)
+    console.log(`Owner:  ${contractOwner}`)
    
 }
 module.exports.tags = ['all', 'BitBucks']

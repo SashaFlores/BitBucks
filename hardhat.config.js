@@ -54,7 +54,14 @@ module.exports = {
     sepolia: {
       url: `https://sepolia.infura.io/v3/${process.env.INFURA_API_KEY}`,
       chainId: 11155111,
-      accounts: [`0x${process.env.ADMIN_KEY}`, `0x${process.env.UPGRADER_KEY}`, `0x${process.env.OTHER_KEY}`, `0x${process.env.MINTER_KEY}`],
+      accounts: [
+        `0x${process.env.ADMIN_KEY}`, 
+        `0x${process.env.UPGRADER_KEY}`, 
+        `0x${process.env.OTHER_KEY}`, 
+        `0x${process.env.MINTER_KEY}`,
+        //`0x${process.env.OWNER_KEY}`,
+        `0x${process.env.MANAGER_KEY}`,
+      ],
       blockConfirmations: 5,
       timeout: 600000,
       saveDeployments: true,
@@ -91,6 +98,14 @@ module.exports = {
     minter: {
       default: 3,
       sepolia: process.env.MINTER
+    },
+    deployer: {
+      default: 4,
+      sepolia: process.env.OWNER
+    },
+    manager: {
+      default: 5,
+      sepolia: process.env.MANAGER
     }
   },
   gasReporter: {

@@ -28,7 +28,7 @@ module.exports = async({getNamedAccounts, deployments}) => {
     })
     const IDToken = await ethers.getContractFactory('IDToken', admin)
     const idToken = await IDToken.attach(idContract.address)
-    log(`001- Proxy deployed to: ${idToken.address}`)
+    log(`01- IDToken Proxy deployed at: ${idToken.address}`)
    
     await idToken.grantRole(DEFAULT_ADMIN_ROLE, admin)
     const checkAdmin = await idToken.hasRole(DEFAULT_ADMIN_ROLE, admin)
