@@ -33,7 +33,7 @@ The aim of this project is to tokenize everything that worth value, identify ind
 
     - *default network: hardhat*
     - *Named Accounts: based on your own set of keys*
-    - *chosen test network: 'sepolia'*
+    - *chosen testnet: 'sepolia'*
 
             npx hardhat deploy
 
