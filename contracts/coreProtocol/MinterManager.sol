@@ -3,9 +3,10 @@ pragma solidity >=0.8.10 <0.9.0;
 
 import './interfaces/IMinterManager.sol';
 import '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
+import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 
 
-abstract contract MinterManager is IMinterManager, OwnableUpgradeable {
+abstract contract MinterManager is Initializable, IMinterManager, OwnableUpgradeable {
 
     mapping(address => address[]) private _managers;
     mapping(address => mapping(address =>bool)) private _isManager;
@@ -15,7 +16,7 @@ abstract contract MinterManager is IMinterManager, OwnableUpgradeable {
 
     modifier onlyManager(address manager, address minter) {
         require(isManager(manager, minter) == true, 
-        "Manager: manager and minter mismatch");
+        'Manager: manager and minter mismatch');
         _;
     }
 
@@ -24,9 +25,10 @@ abstract contract MinterManager is IMinterManager, OwnableUpgradeable {
     }
 
     function assignManager(address minter, address manager) public virtual override onlyOwner returns(bool) {
-        require(!isMinter(minter), "Manager: minter exists");
-        _nonZeroMinter(minter);
-        _nonZeroManager(manager);
+        _nonZeroAddress(minter);
+        _nonZeroAddress(manager);
+        require(!isMinter(minter), 'Manager: minter exists');
+        require(minter != manager, 'Manager: minter and manager are the same address');
         _managers[manager].push(minter);
         exists[minter] = true;
         _isManager[manager][minter] = true;
@@ -36,9 +38,9 @@ abstract contract MinterManager is IMinterManager, OwnableUpgradeable {
     }
 
     function changeManager(address newManager, address prevManager, address minter, uint256 _index) public virtual override onlyOwner {
-        require(isMinter(minter), "Manager: minter does not exist");
-        require(isManager(prevManager, minter) == true, "Manager: not the right manager");
-        _nonZeroManager(newManager);
+        require(isMinter(minter), 'Manager: minter does not exist');
+        require(isManager(prevManager, minter) == true, 'Manager: not the right manager');
+        _nonZeroAddress(newManager);
         if(_index >= _managers[prevManager].length) return;
         for(uint i = _index; i < _managers[prevManager].length - 1; i++) {
             _managers[prevManager][i] = _managers[prevManager][i+1];
@@ -71,12 +73,8 @@ abstract contract MinterManager is IMinterManager, OwnableUpgradeable {
         return exists[minter];
     }
 
-    function _nonZeroManager(address manager) private pure  {
-        require(manager != address(0), "Manager: non zero manager address");
-    }
-
-    function _nonZeroMinter(address estateContract) private pure  {
-        require(estateContract != address(0), "Manager: non zero esate address");
+    function _nonZeroAddress(address assignee) private pure  {
+        require(assignee != address(0), 'Manager: unauthorized zero address');
     }
 
 }

@@ -29,7 +29,4 @@ interface IBitBucks {
     function pauseOps() external;
 
     function unpauseOps() external;
-
-    function isPaused() external view returns(bool);
-
 }

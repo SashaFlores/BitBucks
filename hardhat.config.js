@@ -106,7 +106,13 @@ module.exports = {
     manager: {
       default: 5,
       sepolia: process.env.MANAGER
-    }
+    },
+    minter2: {
+      default: 6
+    },
+    manager2: {
+      default: 7
+    },
   },
   gasReporter: {
     enabled: true,

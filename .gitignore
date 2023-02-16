@@ -10,7 +10,8 @@ typechain-types
 cache
 artifacts
 
-gasReporter.tx
+gasReporter.txt
 deployments
+commands.md
 
 

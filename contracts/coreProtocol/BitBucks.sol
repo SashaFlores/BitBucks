@@ -20,14 +20,13 @@ contract BitBucks is
     PausableUpgradeable,
     ReentrancyGuardUpgradeable
  {
-
     using AddressUpgradeable for address;
 
     mapping(address => uint256) private mintAllowances;
   
 
     string private constant _name = 'BitBucks';
-    string private constant _symbol = 'AND';
+    string private constant _symbol = 'BITS';
 
   
     IDTokenInterface private ID;
@@ -105,10 +104,6 @@ contract BitBucks is
     function unpauseOps() public virtual override onlyOwner {
         _unpause();
     } 
-
-    function isPaused() public view virtual override returns(bool) {
-       return paused();
-    }
 
     function _beforeTokenTransfer(address from, address to, uint256 amount) internal virtual override {
         super._beforeTokenTransfer(from, to, amount);
