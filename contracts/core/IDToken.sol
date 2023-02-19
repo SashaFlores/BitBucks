@@ -1,7 +1,6 @@
 //SPDX-License-Identifier: GPL-3.0
 pragma solidity >=0.8.10 <0.9.0;
 
-
 import '@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
@@ -14,12 +13,20 @@ import '@openzeppelin/contracts-upgradeable/utils/cryptography/SignatureCheckerU
 import '@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol';
 import './interfaces/IDTokenInterface.sol';
 
+/**
+ * @title IDToken
+ * @author Sasha Flores
+ * @dev allows EOA and contracts to mint ID Token from available token ids
+ * all tokens arenot transferrable except for `Business` token 
+ */
+
 // solhint-disable-next-line contract-name-camelcase
 contract IDToken is Initializable, IDTokenInterface, EIP712Upgradeable, ERC1155Upgradeable, AccessControlUpgradeable, UUPSUpgradeable, PausableUpgradeable, ReentrancyGuardUpgradeable {
 
     using AddressUpgradeable for address;
     using CountersUpgradeable for CountersUpgradeable.Counter;
 
+    uint256 private _deadline;
     mapping(uint256 => uint256) private supply;
     mapping(address => bool) private verified;
     mapping(address => CountersUpgradeable.Counter) private nonces;
@@ -31,10 +38,10 @@ contract IDToken is Initializable, IDTokenInterface, EIP712Upgradeable, ERC1155U
     bytes32 private constant UPGRADER_ROLE = keccak256(abi.encodePacked('UPGRADER_ROLE'));
     bytes32 private constant MINTER_ROLE = keccak256(abi.encodePacked('MINTER_ROLE'));
 
-    // keccak256('Mint(uint256 id,uint256 deadline,uint256 nonce)')
-    bytes32 private constant MINT_TYPEHASH = 0x34a81dce1fc51da43c6636a0c631893770c79195cd9e729fab52685f029d1d4c;
-    // keccak256('Burn(address from,uint256 id,uint256 deadline,uint256 nonce)')
-    bytes32 private constant BURN_TYPEHASH = 0x0e4ffe8607d445d4b0743f180be22e7451635eb76b4eaf2c344c23061b4942e7;
+    // keccak256('Mint(uint256 id,uint256 nonce)')
+    bytes32 private constant MINT_TYPEHASH = 0x588a89f2bcfeb8ba98af456d132a03a13826dcdf6236c16ea72653bdfb6fe5a0;
+    // keccak256('Burn(address from,uint256 id,uint256 nonce)')
+    bytes32 private constant BURN_TYPEHASH = 0x65ec0a3d9b23902e2fe999689a69e8e5ad5bcaab57b8635aec70eaae30d3d87f;
 
     uint256 public constant BUSINESS = 1;
     uint256 public constant US_PERSONA = 2;
@@ -112,32 +119,28 @@ contract IDToken is Initializable, IDTokenInterface, EIP712Upgradeable, ERC1155U
         _setURI(uri_);
     }
 
-    // change to error => more gas efficient
-    function grantMinterRole(address minter, uint256 id) public virtual override onlyRole(DEFAULT_ADMIN_ROLE) whenNotPaused returns(bool) {
+    function grantMinterRole(address minter, uint256 id, uint256 deadline) public virtual override onlyRole(DEFAULT_ADMIN_ROLE) whenNotPaused returns(bool) {
         _nonZeroAddress(minter);
         _availIds(id);
-        require(balanceOf(minter, id) == 0, 'token either set or minted');
+
+        _deadline = deadline;
+        
+        if(balanceOf(minter, id) != 0) {
+            revert IDToken_FailedGrantRole(minter, id);
+        } 
         _grantRole(MINTER_ROLE, minter);
-        // if(balanceOf(minter, id) == 0) {
-        //     _grantRole(MINTER_ROLE, minter);
-        // } else {
-        //     revert('token either set or minted');      
-        // } 
-        // return true;
         emit MinterSet(minter, id);
-        return true;
+        return hasRole(MINTER_ROLE, minter);
     }
 
     function signerNonce(address signer) public view virtual returns(uint256) {
         return nonces[signer].current();
     }
 
-    function mint(uint256 id, bytes calldata signature, uint256 deadline) public virtual override whenNotPaused nonReentrant {
-        require(balanceOf(_msgSender(), id) == 0, 'token already minted');
-        _availIds(id);
-        require(block.timestamp < deadline, 'pass deadline');
-    
-        bytes32 txHash = mintHash(id, deadline, _incrementNonce(_msgSender()));
+    function mint(uint256 id, bytes calldata signature) public virtual override whenNotPaused nonReentrant {
+        require(block.timestamp < _deadline, 'pass deadline');
+
+        bytes32 txHash = mintHash(id, _incrementNonce(_msgSender()));
         require(verifySignature(_msgSender(), txHash, signature), 'invalid signature');
 
         _mint(_msgSender(), id, 1, '');
@@ -145,20 +148,13 @@ contract IDToken is Initializable, IDTokenInterface, EIP712Upgradeable, ERC1155U
         verified[_msgSender()] = true;
     }
 
-    function mintHash(uint256 id, uint256 deadline, uint256 _nonce) public view virtual returns(bytes32) {
-        return _hashTypedDataV4(keccak256(abi.encode(MINT_TYPEHASH, id, deadline, _nonce)));
+    function mintHash(uint256 id, uint256 _nonce) public view virtual returns(bytes32) {
+        return _hashTypedDataV4(keccak256(abi.encode(MINT_TYPEHASH, id, _nonce)));
     }
 
-    function transferBusiness(address from, address to, bytes[] calldata signatures) public virtual nonReentrant {
-        
-
-    }
-
-    function burn(address from, uint256 id, bytes calldata signature, uint256 deadline) public virtual override whenNotPaused {
-        _availIds(id);
-        require(block.timestamp < deadline, 'pass deadline');
-
-        bytes32 taxHash = burnHash(from, id, deadline, _incrementNonce(from));
+    function burn(address from, uint256 id, bytes calldata signature) public virtual override whenNotPaused {
+       
+        bytes32 taxHash = burnHash(from, id, _incrementNonce(from));
         require(verifySignature(from, taxHash, signature), 'invalid signature');
 
         _burn(_msgSender(), id, 1);
@@ -166,8 +162,8 @@ contract IDToken is Initializable, IDTokenInterface, EIP712Upgradeable, ERC1155U
         verified[_msgSender()] = true;
     }
 
-    function burnHash(address from, uint256 id, uint256 deadline, uint256 _nonce) public view virtual returns(bytes32) {
-        return _hashTypedDataV4(keccak256(abi.encode(BURN_TYPEHASH, from, id, deadline, _nonce)));
+    function burnHash(address from, uint256 id, uint256 _nonce) public view virtual returns(bytes32) {
+        return _hashTypedDataV4(keccak256(abi.encode(BURN_TYPEHASH, from, id, _nonce)));
     }
 
     function verifySignature(address signer, bytes32 txHash, bytes memory signature) public view returns(bool) {
