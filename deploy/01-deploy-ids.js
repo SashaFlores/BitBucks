@@ -1,4 +1,4 @@
-const {ethers, network } = require('hardhat')
+const { ethers, network } = require('hardhat')
 
 module.exports = async({getNamedAccounts, deployments}) => {
     const { deploy, log } = deployments;
@@ -37,4 +37,4 @@ module.exports = async({getNamedAccounts, deployments}) => {
     console.log(`Does ${admin} has admin role? ${checkAdmin}`)
     console.log(`Does ${upgrader} has upgrader role? ${checkUpgrader}`)
 }
-module.exports.tags = ['all', 'IDToken']
+module.exports.tags = ['all', 'ids']

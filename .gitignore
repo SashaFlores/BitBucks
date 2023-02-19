@@ -13,5 +13,6 @@ artifacts
 gasReporter.txt
 deployments
 commands.md
+.vscode
 
 

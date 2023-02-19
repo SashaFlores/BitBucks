@@ -13,9 +13,9 @@ interface IDTokenInterface {
 
     function isVerified(address account) external returns(bool);
 
-    function mint(uint256 id) external;
+    function mint(uint256 id, bytes calldata signature, uint256 deadline) external;
 
-    function burn(uint256 id) external;
+    function burn(address addr, uint256 id, bytes calldata signature, uint256 deadline) external;
 
     function updateURI(string memory uri_) external;
 
