@@ -7,7 +7,7 @@ interface IDTokenInterface {
 
     error IDToken_FailedGrantRole(address minter, uint256 assignedId);
 
-    function __IDToken_init(address upgrader, string memory uri_) external;
+    function __IDToken_init(address upgrader, address manager, string memory uri_) external;
 
     function totalSupply(uint256 id) external returns(uint256);
 

@@ -21,7 +21,16 @@ import './interfaces/IDTokenInterface.sol';
  */
 
 // solhint-disable-next-line contract-name-camelcase
-contract IDToken is Initializable, IDTokenInterface, EIP712Upgradeable, ERC1155Upgradeable, AccessControlUpgradeable, UUPSUpgradeable, PausableUpgradeable, ReentrancyGuardUpgradeable {
+contract IDToken is 
+    Initializable, 
+    IDTokenInterface, 
+    EIP712Upgradeable, 
+    ERC1155Upgradeable, 
+    AccessControlUpgradeable, 
+    UUPSUpgradeable, 
+    PausableUpgradeable, 
+    ReentrancyGuardUpgradeable 
+{
 
     using AddressUpgradeable for address;
     using CountersUpgradeable for CountersUpgradeable.Counter;
@@ -37,11 +46,15 @@ contract IDToken is Initializable, IDTokenInterface, EIP712Upgradeable, ERC1155U
      */
     bytes32 private constant UPGRADER_ROLE = keccak256(abi.encodePacked('UPGRADER_ROLE'));
     bytes32 private constant MINTER_ROLE = keccak256(abi.encodePacked('MINTER_ROLE'));
+    bytes32 private constant MANAGER_ROLE = keccak256(abi.encodePacked('MANAGER_ROLE'));
 
     // keccak256('Mint(uint256 id,uint256 nonce)')
     bytes32 private constant MINT_TYPEHASH = 0x588a89f2bcfeb8ba98af456d132a03a13826dcdf6236c16ea72653bdfb6fe5a0;
     // keccak256('Burn(address from,uint256 id,uint256 nonce)')
     bytes32 private constant BURN_TYPEHASH = 0x65ec0a3d9b23902e2fe999689a69e8e5ad5bcaab57b8635aec70eaae30d3d87f;
+    // keccak256('TransferBusiness(address from,address to,uint256 nonce)')
+    bytes32 private constant TRANSFERBUSINESS_TYPEHASH = 0x08fbd4ddd267b352a91e83af6df8e0f1646949469c7ea3ee6e7c829e0216ff31;
+
 
     uint256 public constant BUSINESS = 1;
     uint256 public constant US_PERSONA = 2;
@@ -52,7 +65,7 @@ contract IDToken is Initializable, IDTokenInterface, EIP712Upgradeable, ERC1155U
     
 
     // solhint-disable-next-line func-name-mixedcase
-    function __IDToken_init(address upgrader, string memory uri_) external initializer virtual override{
+    function __IDToken_init(address upgrader, address manager, string memory uri_) external initializer virtual override{
         __EIP712_init('IDToken', '1.0.0');
         __ERC1155_init(uri_);
         __AccessControl_init();
@@ -63,6 +76,8 @@ contract IDToken is Initializable, IDTokenInterface, EIP712Upgradeable, ERC1155U
         _nonZeroAddress(_msgSender());
         _setupRole(UPGRADER_ROLE, upgrader);
         _nonZeroAddress(upgrader);
+        _setupRole(MANAGER_ROLE, manager);
+        _nonZeroAddress(manager);
     }
 
     function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155Upgradeable, AccessControlUpgradeable) returns (bool) {
@@ -115,16 +130,17 @@ contract IDToken is Initializable, IDTokenInterface, EIP712Upgradeable, ERC1155U
         return IDToken.totalSupply(id) > 0;
     }
 
-    function updateURI(string memory uri_) external virtual override onlyRole(DEFAULT_ADMIN_ROLE) whenNotPaused {
+    function updateURI(string memory uri_) external virtual override onlyRole(MANAGER_ROLE) whenNotPaused {
         _setURI(uri_);
     }
 
-    function grantMinterRole(address minter, uint256 id, uint256 deadline) public virtual override onlyRole(DEFAULT_ADMIN_ROLE) whenNotPaused returns(bool) {
+    function grantMinterRole(address minter, uint256 id, uint256 deadline) public virtual override onlyRole(MANAGER_ROLE) whenNotPaused returns(bool) {
         _nonZeroAddress(minter);
         _availIds(id);
 
         _deadline = deadline;
         
+
         if(balanceOf(minter, id) != 0) {
             revert IDToken_FailedGrantRole(minter, id);
         } 
@@ -154,7 +170,7 @@ contract IDToken is Initializable, IDTokenInterface, EIP712Upgradeable, ERC1155U
 
     function burn(address from, uint256 id, bytes calldata signature) public virtual override whenNotPaused {
        
-        bytes32 taxHash = burnHash(from, id, _incrementNonce(from));
+        bytes32 taxHash = burnHash(from, id, _incrementNonce(_msgSender()));
         require(verifySignature(from, taxHash, signature), 'invalid signature');
 
         _burn(_msgSender(), id, 1);
@@ -164,6 +180,20 @@ contract IDToken is Initializable, IDTokenInterface, EIP712Upgradeable, ERC1155U
 
     function burnHash(address from, uint256 id, uint256 _nonce) public view virtual returns(bytes32) {
         return _hashTypedDataV4(keccak256(abi.encode(BURN_TYPEHASH, from, id, _nonce)));
+    }
+
+    function transferBusiness(address from, address to, bytes[] memory signatures) public virtual {
+        require(signatures.length == 2, 'Owner and manager signatures are needed');
+        bytes32 txHash = keccak256(abi.encode(TRANSFERBUSINESS_TYPEHASH, from, to, _incrementNonce(_msgSender())));
+        bytes32 hash = _hashTypedDataV4(txHash);
+
+        require(verifySignature(_msgSender(), hash, signatures[0]), 'invalid owner signature');
+        require(
+            SignatureCheckerUpgradeable.isValidSignatureNow(_msgSender(), hash, signatures[1]) &&
+            hasRole(MANAGER_ROLE, _msgSender()), 'invalid manager signature'
+        );
+
+        _safeTransferFrom(from, to, 1, 1, '');
     }
 
     function verifySignature(address signer, bytes32 txHash, bytes memory signature) public view returns(bool) {
