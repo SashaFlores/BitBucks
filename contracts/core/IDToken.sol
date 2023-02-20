@@ -11,6 +11,7 @@ import '@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.
 import '@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/utils/cryptography/SignatureCheckerUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol';
+import './Blacklist.sol';
 import './interfaces/IDTokenInterface.sol';
 
 /**
@@ -27,6 +28,7 @@ contract IDToken is
     EIP712Upgradeable, 
     ERC1155Upgradeable, 
     AccessControlUpgradeable, 
+    Blacklist,
     UUPSUpgradeable, 
     PausableUpgradeable, 
     ReentrancyGuardUpgradeable 
@@ -68,6 +70,7 @@ contract IDToken is
     function __IDToken_init(address upgrader, address manager, string memory uri_) external initializer virtual override{
         __EIP712_init('IDToken', '1.0.0');
         __ERC1155_init(uri_);
+        __Blacklist_init();  
         __AccessControl_init();
         __UUPSUpgradeable_init();
         __Pausable_init();

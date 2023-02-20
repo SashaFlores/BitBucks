@@ -4,6 +4,7 @@ pragma solidity >=0.8.10 <0.9.0;
 import './MinterManager.sol';
 import './interfaces/IBitBucks.sol';
 import './interfaces/IDTokenInterface.sol';
+import './Blacklist.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import '@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol';
@@ -15,6 +16,7 @@ contract BitBucks is
     Initializable,
     IBitBucks,
     MinterManager,
+    Blacklist,
     UUPSUpgradeable,
     ERC20Upgradeable,
     PausableUpgradeable,
@@ -34,6 +36,7 @@ contract BitBucks is
     function __BitBucks_init(address idContract) public virtual override initializer {
         __ERC20_init('BitBucks', 'BITS');
         __MinterManager_init();
+        __Blacklist_init();
         __Pausable_init();
         __UUPSUpgradeable_init();
 
