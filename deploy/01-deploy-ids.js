@@ -1,14 +1,13 @@
 const { ethers, network } = require('hardhat')
+const { DEFAULT_ADMIN_ROLE, UPGRADER_ROLE, MANAGER_ROLE } = require('./../utils/constants')
 
 module.exports = async({getNamedAccounts, deployments}) => {
     const { deploy, log } = deployments;
-    const { admin, upgrader } = await getNamedAccounts();
+    const { admin, upgrader, manager } = await getNamedAccounts();
     console.log({namedAccounts: await getNamedAccounts()})
 
     const networkName = network.name
-    const DEFAULT_ADMIN_ROLE = ethers.utils.id('DEFAULT_ADMIN_ROLE')
-    const UPGRADER_ROLE = ethers.utils.id('UPGRADER_ROLE')
-
+  
     log(`-----Preparing Contracts for Deployment on ${networkName} -------`)
 
     const idContract = await deploy('IDToken', {
@@ -20,7 +19,11 @@ module.exports = async({getNamedAccounts, deployments}) => {
             proxyContract: 'UUPS',
             execute: {
                 methodName: '__IDToken_init',
-                args: [upgrader, 'http://bafybeihqp5dcnhnspwhs3fqh4tmzweu6nw33iukx6i4sqnv4vwed3zuwc4.ipfs.localhost:8080/{id}.json']
+                args: [
+                    upgrader, 
+                    manager,
+                    'http://bafybeihqp5dcnhnspwhs3fqh4tmzweu6nw33iukx6i4sqnv4vwed3zuwc4.ipfs.localhost:8080/{id}.json'
+                ]
             }
 
         },
@@ -31,10 +34,15 @@ module.exports = async({getNamedAccounts, deployments}) => {
     log(`01- IDToken Proxy deployed at: ${idToken.address}`)
    
     await idToken.grantRole(DEFAULT_ADMIN_ROLE, admin)
+    
     const checkAdmin = await idToken.hasRole(DEFAULT_ADMIN_ROLE, admin)
     const checkUpgrader = await idToken.hasRole(UPGRADER_ROLE, upgrader)
-
+    const checkManager = await idToken.hasRole(MANAGER_ROLE, manager)
+  
+   
     console.log(`Does ${admin} has admin role? ${checkAdmin}`)
     console.log(`Does ${upgrader} has upgrader role? ${checkUpgrader}`)
+    console.log(`Does ${manager} has upgrader role? ${checkManager}`)
+
 }
 module.exports.tags = ['all', 'ids']

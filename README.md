@@ -19,13 +19,28 @@ The aim of this project is to tokenize everything that worth value, identify ind
 
 ## *Work In Progress:*
 
-## *IDToken:*
+### *Testing Completed Contracts*
+### *Other Contracts*
+
+## *Contracts Completed:*
+### *IDToken:*
 
 *identify yourself or your business from a range of a predetermined identities*
 
-## *Stable Token 'BitBucks':*  
+*contract accepts EOA & other contracts as owners, admins will send off-chain cryptographic messages to prospective token minters with a deadline to mint their tokens & verify their signatures on-chain*
 
-*It's based on segregation of duties; contract owner will assign a manager to each minter, the manager responsibility is to determine the exact amount that minter is allowed to mint, with preserving the right to the owner to audit manager &/or minter*
+*Contract can verify signatures of ECDSA from EOA and of ERC1271 from other contracts*
+
+### *Stable Token 'BitBucks':*  
+
+*Allows authorized minters to mint the exact allowance determined by assigned manager, Currently accepts only cash deposits.*
+
+### *Minter Manager Contract:*
+*Module implemented by child contract to segregate duties of contract deployer `owner` from managers assigned to minters. the manager responsibility is to determine the exact amount that minter is allowed to mint, with preserving the right to the owner to audit manager &/or minter*
+
+### *Blacklist Contract:*
+
+*A light module implemented by child contracts to blacklist and lift from list accounts with red flags*
 
 ## *To Run What have been achieved so far after cloning the repository*
 

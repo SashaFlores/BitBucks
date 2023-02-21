@@ -3,15 +3,20 @@ pragma solidity >=0.8.10 <0.9.0;
 
 interface IDTokenInterface {
 
-    event MinterSet(address indexed minter, uint256 id);
+   
+    error IDToken_IdMinted(address IdHolderAddress, uint256 id);
 
-    error IDToken_FailedGrantRole(address minter, uint256 assignedId);
+    error IDToken_ZeroAddress();
+
+    error IDToken_UnavailID();
+
+    error IDToken_invalidSignature(address signer);
+
+    error IDToken_MisingRole();
 
     function __IDToken_init(address upgrader, address manager, string memory uri_) external;
 
     function totalSupply(uint256 id) external returns(uint256);
-
-    function grantMinterRole(address minter, uint256 id, uint256 deadline) external returns(bool);
 
     function transferBusiness(address from, address to, bytes[] memory signatures) external;
 
@@ -19,7 +24,7 @@ interface IDTokenInterface {
 
     function signerNonce(address signer) external view returns(uint256);
     
-    function mint(uint256 id, bytes calldata signature) external;
+    function mint(uint256 id, uint256 deadline, bytes calldata signature) external;
 
     function burn(address addr, uint256 id, bytes calldata signature) external;
 

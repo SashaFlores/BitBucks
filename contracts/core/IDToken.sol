@@ -37,9 +37,11 @@ contract IDToken is
     using AddressUpgradeable for address;
     using CountersUpgradeable for CountersUpgradeable.Counter;
 
-    uint256 private _deadline;
+    // tracks contract supply
     mapping(uint256 => uint256) private supply;
+    // true if address verified
     mapping(address => bool) private verified;
+    // prevent replay attacks
     mapping(address => CountersUpgradeable.Counter) private nonces;
 
 
@@ -50,8 +52,8 @@ contract IDToken is
     bytes32 private constant MINTER_ROLE = keccak256(abi.encodePacked('MINTER_ROLE'));
     bytes32 private constant MANAGER_ROLE = keccak256(abi.encodePacked('MANAGER_ROLE'));
 
-    // keccak256('Mint(uint256 id,uint256 nonce)')
-    bytes32 private constant MINT_TYPEHASH = 0x588a89f2bcfeb8ba98af456d132a03a13826dcdf6236c16ea72653bdfb6fe5a0;
+    // keccak256('Mint(uint256 id,uint256 deadline,uint256 nonce)')
+    bytes32 private constant MINT_TYPEHASH = 0x34a81dce1fc51da43c6636a0c631893770c79195cd9e729fab52685f029d1d4c;
     // keccak256('Burn(address from,uint256 id,uint256 nonce)')
     bytes32 private constant BURN_TYPEHASH = 0x65ec0a3d9b23902e2fe999689a69e8e5ad5bcaab57b8635aec70eaae30d3d87f;
     // keccak256('TransferBusiness(address from,address to,uint256 nonce)')
@@ -64,10 +66,50 @@ contract IDToken is
     uint256 public constant US_INVERSTOR = 4;
     uint256 public constant INT_INVESTOR = 5;
 
+
+    modifier availIds() {
+        uint256[5] memory ids;
+        for(uint256 i = 0; i <= ids.length; i++) {
+            uint256 id = ids[i];
+            if(id > ids.length) 
+            revert IDToken_UnavailID();
+        }
+        _;
+    }
+
+    modifier notZeroAddress(address addr) {
+        if(addr == address(0))
+            revert IDToken_ZeroAddress();
+        _;
+    }
+
+
+    /**
+     * @param upgrader address, upgrade, pause & unpause ops
+     * @param manager address, update URI & sign Business transfer
+     * @param uri_ string, metadata of tokens by replacing `id` number
+     * Requirements:
+     * non zero address isn't allowed 
+     * 
+     * Emits a {Rolegranted} event - check AccessControl
+     */
     
 
     // solhint-disable-next-line func-name-mixedcase
-    function __IDToken_init(address upgrader, address manager, string memory uri_) external initializer virtual override{
+    function __IDToken_init
+    (
+        address upgrader, 
+        address manager, 
+        string memory uri_
+    ) 
+    external 
+    initializer 
+    virtual 
+    override 
+    notZeroAddress(_msgSender())
+    notZeroAddress(upgrader)
+    notZeroAddress(manager)
+    {
         __EIP712_init('IDToken', '1.0.0');
         __ERC1155_init(uri_);
         __Blacklist_init();  
@@ -76,11 +118,8 @@ contract IDToken is
         __Pausable_init();
 
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
-        _nonZeroAddress(_msgSender());
         _setupRole(UPGRADER_ROLE, upgrader);
-        _nonZeroAddress(upgrader);
         _setupRole(MANAGER_ROLE, manager);
-        _nonZeroAddress(manager);
     }
 
     function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155Upgradeable, AccessControlUpgradeable) returns (bool) {
@@ -111,7 +150,7 @@ contract IDToken is
         return id;
     }
 
-    function totalSupply(uint256 id) public view virtual override returns(uint256) {
+    function totalSupply(uint256 id) public view virtual override availIds returns(uint256) {
         return supply[id];
     }
 
@@ -120,94 +159,136 @@ contract IDToken is
     }
 
     function pauseOps() external virtual {
-        require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()) || hasRole(UPGRADER_ROLE, _msgSender()), 'missing role');
+        if(
+            !hasRole(DEFAULT_ADMIN_ROLE, _msgSender()) ||
+            !hasRole(UPGRADER_ROLE, _msgSender())
+        )
+            revert IDToken_MisingRole();
         _pause();
     }
 
     function unpauseOps() external virtual {
-        require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()) || hasRole(UPGRADER_ROLE, _msgSender()), 'missing role');
+        if(
+            !hasRole(DEFAULT_ADMIN_ROLE, _msgSender()) ||
+            !hasRole(UPGRADER_ROLE, _msgSender())
+        )
+            revert IDToken_MisingRole();
         _unpause();
     }
 
-    function exists(uint256 id) external view virtual override returns(bool) {
+    function exists(uint256 id) external view virtual override availIds returns(bool) {
         return IDToken.totalSupply(id) > 0;
     }
 
     function updateURI(string memory uri_) external virtual override onlyRole(MANAGER_ROLE) whenNotPaused {
         _setURI(uri_);
     }
-
-    function grantMinterRole
-    (
-        address minter, 
-        uint256 id, 
-        uint256 deadline
-    ) 
-    public 
-    virtual 
-    override 
-    onlyRole(MANAGER_ROLE) 
-    NotBlacklisted
-    whenNotPaused 
-    returns(bool) 
-    {
-        _nonZeroAddress(minter);
-        _availIds(id);
-
-        _deadline = deadline;
-        
-
-        if(balanceOf(minter, id) != 0) {
-            revert IDToken_FailedGrantRole(minter, id);
-        } 
-        _grantRole(MINTER_ROLE, minter);
-        emit MinterSet(minter, id);
-        return hasRole(MINTER_ROLE, minter);
-    }
-
+    /**
+     * @notice returns latest nonce used by signer
+     */
     function signerNonce(address signer) public view virtual override returns(uint256) {
         return nonces[signer].current();
     }
 
-    function mint(uint256 id, bytes calldata signature) public virtual override NotBlacklisted whenNotPaused nonReentrant {
-        require(block.timestamp < _deadline, 'pass deadline');
+    /**
+     * @notice verify minter's `signature` & `id` from `availIds`
+     * 
+     * Requirements:
+     * signature within deadline
+     * balance of `signer` of token `id` should be zero before minting
+     * `signer` has `MINTER_ROLE`
+     * `signer` isnot blacklisted
+     * contract isnot paused
+     * `id` is from `availIds`
+     * 
+     * Emits a {TransferSingle} - check ERC1155
+     */
+    function mint
+    (
+        uint256 id, 
+        uint256 deadline, 
+        bytes calldata signature
+    ) 
+    public
+    virtual 
+    override 
+    availIds 
+    NotBlacklisted 
+    whenNotPaused 
+    nonReentrant 
+    {
+        if(balanceOf(_msgSender(), id) != 0) 
+            revert IDToken_IdMinted(_msgSender(), balanceOf(_msgSender(), id));
 
-        bytes32 txHash = mintHash(id, _incrementNonce(_msgSender()));
-        require(verifySignature(_msgSender(), txHash, signature), 'invalid signature');
+        require(block.timestamp < deadline, 'pass deadline');
 
+        bytes32 txHash = mintHash(id, deadline, _incrementNonce(_msgSender()));
+        if(!verifySignature(_msgSender(), txHash, signature))
+            revert IDToken_invalidSignature(_msgSender());
+       
         _mint(_msgSender(), id, 1, '');
         supply[id] ++;
         verified[_msgSender()] = true;
     }
 
-    function mintHash(uint256 id, uint256 _nonce) public view virtual returns(bytes32) {
-        return _hashTypedDataV4(keccak256(abi.encode(MINT_TYPEHASH, id, _nonce)));
+    /**
+     * @notice returns bytes32 hash of mint function
+     */
+    function mintHash(uint256 id, uint256 deadline, uint256 _nonce) public view virtual availIds returns(bytes32) {
+        return _hashTypedDataV4(keccak256(abi.encode(MINT_TYPEHASH, id, deadline, _nonce)));
     }
 
-    function burn(address from, uint256 id, bytes calldata signature) public virtual override NotBlacklisted whenNotPaused {
+    /**
+     * @notice burns token `id` from `from` balance
+     * 
+     * Requirements:
+     * from `from` has balance of token `id`
+     * caller has `MINTER_ROLE`
+     * `signer` isnot blacklisted
+     * contract isnot paused
+     * `id` is from `availIds`
+     * 
+     * Emits a {TransferSingle} - check ERC1155
+     */
+    function burn(address from, uint256 id, bytes calldata signature) public virtual override availIds NotBlacklisted whenNotPaused {
        
-        bytes32 taxHash = burnHash(from, id, _incrementNonce(_msgSender()));
-        require(verifySignature(from, taxHash, signature), 'invalid signature');
+        bytes32 txHash = burnHash(from, id, _incrementNonce(_msgSender()));
+        if(!verifySignature(_msgSender(), txHash, signature))
+            revert IDToken_invalidSignature(_msgSender());
 
         _burn(_msgSender(), id, 1);
         supply[id] --;
         verified[_msgSender()] = true;
     }
 
-    function burnHash(address from, uint256 id, uint256 _nonce) public view virtual returns(bytes32) {
+    /**
+     * @notice returns bytes32 hash of burn function
+     */
+    function burnHash(address from, uint256 id, uint256 _nonce) public view virtual availIds returns(bytes32) {
         return _hashTypedDataV4(keccak256(abi.encode(BURN_TYPEHASH, from, id, _nonce)));
     }
 
-    function transferBusiness(address from, address to, bytes[] memory signatures) public virtual override NotBlacklisted {
+    /**
+     * @notice transfer business token from `from` to `to`
+     * 
+     * Requirements:
+     * only Business Token is transferrable
+     * a valid `signature` from `MANAGER_ROLE` assignee is needed
+     * a valid `signature` from `MINTER_ROLE` assignee is needed
+     * 
+     * Emits a {TransferSingle} - check ERC1155
+     */
+    function transferBusiness(address from, address to, bytes[] memory signatures) public virtual override NotBlacklisted whenNotPaused {
         require(signatures.length == 2, 'Owner and manager signatures are needed');
         bytes32 txHash = keccak256(abi.encode(TRANSFERBUSINESS_TYPEHASH, from, to, _incrementNonce(_msgSender())));
         bytes32 hash = _hashTypedDataV4(txHash);
-
-        require(verifySignature(_msgSender(), hash, signatures[0]), 'invalid owner signature');
-        require(
-            SignatureCheckerUpgradeable.isValidSignatureNow(_msgSender(), hash, signatures[1]) &&
-            hasRole(MANAGER_ROLE, _msgSender()), 'invalid manager signature'
-        );
+        if(!verifySignature(_msgSender(), hash, signatures[0]))
+            revert IDToken_invalidSignature(_msgSender());
+        if(
+            !SignatureCheckerUpgradeable.isValidSignatureNow(_msgSender(), hash, signatures[1]) &&
+            !hasRole(MANAGER_ROLE, _msgSender())
+        )
+            revert IDToken_invalidSignature(_msgSender());
 
         _safeTransferFrom(from, to, 1, 1, '');
     }
@@ -247,19 +328,8 @@ contract IDToken is
         super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
     }
 
-    function _authorizeUpgrade(address newImplementation) internal virtual override onlyRole(UPGRADER_ROLE) {
-        _nonZeroAddress(newImplementation);
+    function _authorizeUpgrade(address newImplementation) internal virtual override onlyRole(UPGRADER_ROLE) notZeroAddress(newImplementation) {
         require(AddressUpgradeable.isContract(newImplementation), 'new implementation not contract');
         require(paused(), 'pause ops before upgrade');
     }
-
-    function _availIds(uint256 id) private pure {
-        uint256[5] memory availIds;
-        require(id <= availIds.length, 'unavailable id yet');
-    }
-
-    function _nonZeroAddress(address _address) private pure {
-        require(_address != address(0), 'address zero unauthorized');
-    }
-
 }

@@ -7,7 +7,11 @@ interface IBlacklist {
 
     event AccountUnlisted(address indexed account);
 
-    error _Blacklist_ZeroAddress();
+    error Blacklist_ZeroAddress();
+
+    error Blacklist_NotListed();
+    
+    error Blacklist_Listed();
 
     function isBlacklisted(address addr) external view returns(bool); 
 
