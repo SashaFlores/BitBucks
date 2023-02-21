@@ -137,7 +137,20 @@ contract IDToken is
         _setURI(uri_);
     }
 
-    function grantMinterRole(address minter, uint256 id, uint256 deadline) public virtual override onlyRole(MANAGER_ROLE) whenNotPaused returns(bool) {
+    function grantMinterRole
+    (
+        address minter, 
+        uint256 id, 
+        uint256 deadline
+    ) 
+    public 
+    virtual 
+    override 
+    onlyRole(MANAGER_ROLE) 
+    NotBlacklisted
+    whenNotPaused 
+    returns(bool) 
+    {
         _nonZeroAddress(minter);
         _availIds(id);
 
@@ -152,11 +165,11 @@ contract IDToken is
         return hasRole(MINTER_ROLE, minter);
     }
 
-    function signerNonce(address signer) public view virtual returns(uint256) {
+    function signerNonce(address signer) public view virtual override returns(uint256) {
         return nonces[signer].current();
     }
 
-    function mint(uint256 id, bytes calldata signature) public virtual override whenNotPaused nonReentrant {
+    function mint(uint256 id, bytes calldata signature) public virtual override NotBlacklisted whenNotPaused nonReentrant {
         require(block.timestamp < _deadline, 'pass deadline');
 
         bytes32 txHash = mintHash(id, _incrementNonce(_msgSender()));
@@ -171,7 +184,7 @@ contract IDToken is
         return _hashTypedDataV4(keccak256(abi.encode(MINT_TYPEHASH, id, _nonce)));
     }
 
-    function burn(address from, uint256 id, bytes calldata signature) public virtual override whenNotPaused {
+    function burn(address from, uint256 id, bytes calldata signature) public virtual override NotBlacklisted whenNotPaused {
        
         bytes32 taxHash = burnHash(from, id, _incrementNonce(_msgSender()));
         require(verifySignature(from, taxHash, signature), 'invalid signature');
@@ -185,7 +198,7 @@ contract IDToken is
         return _hashTypedDataV4(keccak256(abi.encode(BURN_TYPEHASH, from, id, _nonce)));
     }
 
-    function transferBusiness(address from, address to, bytes[] memory signatures) public virtual {
+    function transferBusiness(address from, address to, bytes[] memory signatures) public virtual override NotBlacklisted {
         require(signatures.length == 2, 'Owner and manager signatures are needed');
         bytes32 txHash = keccak256(abi.encode(TRANSFERBUSINESS_TYPEHASH, from, to, _incrementNonce(_msgSender())));
         bytes32 hash = _hashTypedDataV4(txHash);

@@ -13,8 +13,12 @@ interface IDTokenInterface {
 
     function grantMinterRole(address minter, uint256 id, uint256 deadline) external returns(bool);
 
+    function transferBusiness(address from, address to, bytes[] memory signatures) external;
+
     function isVerified(address account) external returns(bool);
 
+    function signerNonce(address signer) external view returns(uint256);
+    
     function mint(uint256 id, bytes calldata signature) external;
 
     function burn(address addr, uint256 id, bytes calldata signature) external;

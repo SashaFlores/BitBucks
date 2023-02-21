@@ -44,36 +44,72 @@ contract BitBucks is
     }
 
 
-    function setAllowance(address minter, uint256 allowance) public virtual override onlyManager(_msgSender(), minter) whenNotPaused {
-        require(allowance > 0, 'BitBucks: zero allowance');
+    function setAllowance
+    (
+        address minter, 
+        uint256 allowance
+    ) 
+    public 
+    virtual 
+    override 
+    onlyManager(_msgSender(), minter) 
+    NotBlacklisted 
+    whenNotPaused 
+    nonReentrant
+    {
         mintAllowances[minter] = allowance;
         emit MintAllowance(_msgSender(), minter, allowance);
     }
 
-    function increaseMintAllowance(address minter, uint256 increase) public virtual override onlyManager(_msgSender(), minter) whenNotPaused {
-        require(increase > 0, 'BitBucks: new allowance is zero');
+    function incrementAllowance
+    (
+        address minter, 
+        uint256 increase
+    ) 
+    public 
+    virtual 
+    override 
+    onlyManager(_msgSender(), minter) 
+    NotBlacklisted
+    nonReentrant
+    whenNotPaused 
+    {
         uint256 oldAllowance = mintAllowances[minter];
         uint256 allowance = oldAllowance + increase;
         mintAllowances[minter] = allowance;
         emit AllowanceIncreased(_msgSender(), minter, increase, allowance);
     }
 
-    function decareseMinterAllowance(address minter, uint256 decrease) public virtual override onlyManager(_msgSender(), minter) whenNotPaused {
-        require(decrease > 0, 'BitBucks: decrement is zero');
+    function decrementAllowance
+    (
+        address minter, 
+        uint256 decrease
+    ) 
+    public 
+    virtual 
+    override 
+    onlyManager(_msgSender(), minter) 
+    NotBlacklisted
+    nonReentrant
+    whenNotPaused 
+    {
+    
         uint256 currentAllowance = mintAllowances[minter];
         if(currentAllowance >= decrease) {
             uint256 allowance = currentAllowance - decrease;
             mintAllowances[minter] = allowance;
             emit AllowanceDecreased(_msgSender(), minter, decrease, allowance);
         } else {
-            revert('BitBucks: current allowance less than decreasing value');
+            revert BitBucks_ExceedsBalance(currentAllowance, decrease);
         }
     }
 
-    function mint(address to, uint256 amount) public virtual override nonReentrant {
-        require(to != address(0), 'BitBucks: unauthorized zero address');
-        require(ID.isVerified(_msgSender()), "BitBucks: unverified account");
-        require(isMinter(_msgSender()), 'BitBucks: unauthorized minter');
+    function mint(address to, uint256 amount) public virtual override NotBlacklisted nonReentrant whenNotPaused {
+        _notMinter(_msgSender());
+        if(to == address(0) || !ID.isVerified(_msgSender())) {
+            revert BitBucks_ZeroAddress_or_unverified();
+        }
+        
         uint256 toMint = mintAllowances[_msgSender()];
         require(toMint == amount, 'BitBucks: mint exact allowance');
         unchecked {
@@ -88,14 +124,13 @@ contract BitBucks is
     }
 
     function removeMinter(address minter) public virtual override onlyOwner whenNotPaused returns(bool) {
-        require(isMinter(minter), 'BitBucks: minter doesnot exist');
+        _notMinter(minter);
         exists[minter] = false;
         emit MinterRemoved(_msgSender(), minter);
         return isMinter(minter);
     }
 
     function burn(address from, uint256 amount) public virtual override onlyManager(_msgSender(), from) {
-        require(amount > 0, 'BitBucks: nothing to burn');
         _burn(from, amount);
         emit Burn(_msgSender(), from, amount);
     }
@@ -121,5 +156,11 @@ contract BitBucks is
     function _authorizeUpgrade(address newImplementation) internal virtual override onlyOwner {
         require(AddressUpgradeable.isContract(newImplementation), 'BitBucks: new Implementation must be a contract');
         require(newImplementation != address(0), 'BitBucks: zero address error');
+    }
+
+    function _notMinter(address minter) private view {
+        if(!isMinter(minter)) {
+            revert BitBucks_NonExistMinter();
+        }
     }
 }
