@@ -66,3 +66,8 @@ The aim of this project is to tokenize everything that worth value, identify ind
         npx hardhat test
 
 
+* *To Test a specific test block or tag*
+
+        npx hardhat test --grep 'test tag'
+
+

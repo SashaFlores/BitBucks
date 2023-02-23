@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: GPL-3.0
 pragma solidity >=0.8.10 <0.9.0;
 
-import './MinterManager.sol';
+import './Manager.sol';
 import './interfaces/IBitBucks.sol';
 import './interfaces/IDTokenInterface.sol';
 import './Blacklist.sol';
@@ -12,10 +12,18 @@ import '@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.
 import '@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol';
 
 
+/**
+ * @title BitBucks
+ * @author Sasha Flores
+ * @dev By inheriting `MinterManager` contracrt, deployer `owner`
+ * assigns `manager` to minter` & `manager` set `allowance` for
+ * each `minter` that will have to mint the exact same `allowance
+ * set by manager. `minter` has to be verified prior to `mint`
+ */
 contract BitBucks is 
     Initializable,
     IBitBucks,
-    MinterManager,
+    Manager,
     Blacklist,
     UUPSUpgradeable,
     ERC20Upgradeable,
@@ -30,12 +38,15 @@ contract BitBucks is
     string private constant _name = 'BitBucks';
     string private constant _symbol = 'BITS';
 
-  
     IDTokenInterface private ID;
+
+    /**
+     * @param idContract address, `IDToken` contract address
+     */
 
     function __BitBucks_init(address idContract) public virtual override initializer {
         __ERC20_init('BitBucks', 'BITS');
-        __MinterManager_init();
+        __Manager_init();
         __Blacklist_init();
         __Pausable_init();
         __UUPSUpgradeable_init();
@@ -43,7 +54,17 @@ contract BitBucks is
         ID = IDTokenInterface(idContract);
     }
 
-
+    /**
+     * @notice assigned `manager` initially `setAllowance` of `minter`
+     * 
+     * Requirements:
+     * - accessible by `onlyManager` assigned to `minter`by `owner`
+     * - contract isnot paused
+     * - `minter` isnot blacklisted
+     * - non zero address `minter`
+     * 
+     * Emits {MintAllowance} event - check IBitBucks
+     */
     function setAllowance
     (
         address minter, 
@@ -61,6 +82,17 @@ contract BitBucks is
         emit MintAllowance(_msgSender(), minter, allowance);
     }
 
+    /**
+     * @notice assigned `manager` increment allowance by amount `increase` for `minter`
+     * 
+     * Requirements:
+     * - accessible by `onlyManager` assigned to `minter`by `owner`
+     * - contract isnot paused
+     * - `minter` isnot blacklisted
+     * - non zero address `minter`
+     * 
+     * Emits {AllowanceIncreased} event - check IBitBucks
+     */
     function incrementAllowance
     (
         address minter, 
@@ -80,6 +112,19 @@ contract BitBucks is
         emit AllowanceIncreased(_msgSender(), minter, increase, allowance);
     }
 
+    /**
+     * @notice assigned `manager` decrement allowance by amount `decrease` for `minter`
+     * 
+     * Requirements:
+     * - accessible by `onlyManager` assigned to `minter`by `owner`
+     * - contract isnot paused
+     * - `minter` isnot blacklisted
+     * - non zero address `minter`
+     * - current `allowance` exceeds `decrease` amount or 
+     *   revert with `BitBucks_ExceedsBalance`
+     * 
+     * Emits {AllowanceDecreased} event - check IBitBucks
+     */
     function decrementAllowance
     (
         address minter, 
@@ -104,11 +149,23 @@ contract BitBucks is
         }
     }
 
+    /**
+     * @notice minter can `mint` to `to` of the exact `amount`
+     * assigned by manager, to can be account or smart contract
+     * 
+     * Requirements:
+     * - caller is an authorized `minter` with valid `IDToken` & `to`
+     *   is non zero address, otherwise function revert `BitBucks_ZeroAddress_or_unverified`
+     * - contract isnot paused
+     * - `minter` isnot blacklisted 
+     * - `amount` is the same as `allowance` or reverts
+     * 
+     * Emits {Mint} event - check IBitBucks
+     */
     function mint(address to, uint256 amount) public virtual override NotBlacklisted nonReentrant whenNotPaused {
         _notMinter(_msgSender());
-        if(to == address(0) || !ID.isVerified(_msgSender())) {
+        if(to == address(0) || !ID.isVerified(_msgSender())) 
             revert BitBucks_ZeroAddress_or_unverified();
-        }
         
         uint256 toMint = mintAllowances[_msgSender()];
         require(toMint == amount, 'BitBucks: mint exact allowance');
@@ -119,27 +176,37 @@ contract BitBucks is
         emit Mint(_msgSender(), to, amount);
     }
 
+    /**
+     * @notice returns `minterAllowance` of `minter` 
+     */
     function minterAllowance(address minter) external view virtual override returns(uint256) {
         return mintAllowances[minter];
     }
 
-    function removeMinter(address minter) public virtual override onlyOwner whenNotPaused returns(bool) {
-        _notMinter(minter);
-        exists[minter] = false;
-        emit MinterRemoved(_msgSender(), minter);
-        return isMinter(minter);
-    }
 
+    /**
+     * @notice destory `burn` `amount` from `from`
+     * accessible only by manager assigned to `from`
+     * 
+     * Requirements:
+     * - caller is an authorized `minter` with valid `IDToken` & `to`
+     *   is non zero address, otherwise function revert `BitBucks_ZeroAddress_or_unverified`
+     * - contract isnot paused
+     * - `minter` isnot blacklisted 
+     * - `amount` is the same as `allowance` or reverts
+     * 
+     * Emits {Mint} event - check IBitBucks
+     */
     function burn(address from, uint256 amount) public virtual override onlyManager(_msgSender(), from) {
         _burn(from, amount);
         emit Burn(_msgSender(), from, amount);
     }
 
-    function pauseOps() public virtual override onlyOwner{
+    function pauseOps() external virtual override onlyOwner{
         _pause();
     }
 
-    function unpauseOps() public virtual override onlyOwner {
+    function unpauseOps() external virtual override onlyOwner {
         _unpause();
     } 
 
@@ -159,7 +226,7 @@ contract BitBucks is
     }
 
     function _notMinter(address minter) private view {
-        if(!isMinter(minter)) {
+        if(!isAssignee(minter)) {
             revert BitBucks_NonExistMinter();
         }
     }

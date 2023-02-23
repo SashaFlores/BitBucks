@@ -33,8 +33,6 @@ interface IBitBucks {
 
     function minterAllowance(address minter) external view returns(uint256);
 
-    function removeMinter(address minter) external returns(bool);
-
     function burn(address from, uint256 amount) external;
 
     function pauseOps() external;
