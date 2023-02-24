@@ -12,8 +12,6 @@ interface IDTokenInterface {
 
     error IDToken_invalidSignature(address signer);
 
-    error IDToken_MisingRole();
-
     function __IDToken_init(address upgrader, address manager, string memory uri_) external;
 
     function totalSupply(uint256 id) external returns(uint256);

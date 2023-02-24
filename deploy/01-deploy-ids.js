@@ -39,10 +39,9 @@ module.exports = async({getNamedAccounts, deployments}) => {
     const checkUpgrader = await idToken.hasRole(UPGRADER_ROLE, upgrader)
     const checkManager = await idToken.hasRole(MANAGER_ROLE, manager)
   
-   
     console.log(`Does ${admin} has admin role? ${checkAdmin}`)
     console.log(`Does ${upgrader} has upgrader role? ${checkUpgrader}`)
-    console.log(`Does ${manager} has upgrader role? ${checkManager}`)
+    console.log(`Does ${manager} has manager role? ${checkManager}`)
 
 }
 module.exports.tags = ['all', 'ids']

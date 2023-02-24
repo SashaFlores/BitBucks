@@ -37,7 +37,16 @@ abstract contract Manager is Initializable, IManager, OwnableUpgradeable {
         __Ownable_init();
     }
 
-
+    /**
+     * @param manager address
+     * @param assignee address
+     * 
+     * Requirements:
+     * - `assignee` doesnot exist
+     * - `assignee` & `manager` are non zero addresses
+     * 
+     * Emits {ManagerAssigned} event -check IManager
+     */
     function assignManager
     (
         address manager,
@@ -62,7 +71,17 @@ abstract contract Manager is Initializable, IManager, OwnableUpgradeable {
         emit ManagerAssigned(manager, assignee, index);
     }
 
-
+    /**
+     * @param newManager address
+     * @param prevManager address
+     * @param assignee address
+     * 
+     * Requirements:
+     * - `assignee` already listed
+     * - `assignee` was assigned to `prevManager`
+     * 
+     * Emits {ManagerChanged} - check IManager
+     */
     function changeManager
     (
         address newManager, 
@@ -93,7 +112,14 @@ abstract contract Manager is Initializable, IManager, OwnableUpgradeable {
         emit ManagerChanged(prevManager, newManager);
     }
 
-    function removeAssignee(address assignee, address manager) public virtual override onlyOwner notZeroAddress(manager) {
+    /**
+     * @param assignee address
+     * @param manager address
+     * @notice removes `assignee` completely from assignees array
+     * 
+     * Emits {AssigneeRemoved} - check IManager
+     */
+    function removeAssignee(address assignee, address manager) public virtual override onlyOwner {
         if(!isAssignee(assignee))
             revert Manager_AssigneeNotExists();
         uint256 index = assigneeIndex(manager, assignee);
@@ -106,7 +132,11 @@ abstract contract Manager is Initializable, IManager, OwnableUpgradeable {
         emit AssigneeRemoved(assignee);
     }
 
-
+    /**
+     * @param manager address
+     * @notice removes `manager` address completely 
+     * reverts if assignees are still assigned to `manager`
+     */
     function removeManager(address manager) public virtual {
         if(_managers[manager].length <= 0) {
             delete _managers[manager]; 
@@ -115,6 +145,12 @@ abstract contract Manager is Initializable, IManager, OwnableUpgradeable {
         }                 
     }
 
+    /**
+     * @param manager address
+     * @param assignee address
+     * @notice returns `assigneeIndex` in `manager` array
+     * reverts if `assignee` doesn't exist in manager array
+     */
     function assigneeIndex(address manager, address assignee) public view returns(uint256) {
         for(uint256 i = 0; i < _managers[manager].length; i++) {
             if(assignee == _managers[manager][i]) {
@@ -124,8 +160,11 @@ abstract contract Manager is Initializable, IManager, OwnableUpgradeable {
         revert Manager_AssigneeNotExists();
     }
 
-
- 
+    /**
+     * @param manager address
+     * @param assignee address
+     * @notice returns true if `assignee` is assigned to `manager`
+     */
     function isManager(address manager, address assignee) public view virtual override returns(bool){
         for(uint256 i = 0; i < _managers[manager].length; i++) {
             if(assignee == _managers[manager][i]) {

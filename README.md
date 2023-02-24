@@ -35,12 +35,12 @@ The aim of this project is to tokenize everything that worth value, identify ind
 
 *Allows authorized minters to mint the exact allowance determined by assigned manager, Currently accepts only cash deposits.*
 
-### *Minter Manager Contract:*
-*Module implemented by child contract to segregate duties of contract deployer `owner` from managers assigned to minters. the manager responsibility is to determine the exact amount that minter is allowed to mint, with preserving the right to the owner to audit manager &/or minter*
+### *Manager Contract:*
+*Module implemented by any child contract to tailor duties of each manager responsible for array of assignees. the contract deployer can assign an assignee to a manager, change manager, remove assignee, or remove manager. In the child contract you can specify manager duties as you may see fit your needs.*
 
 ### *Blacklist Contract:*
 
-*A light module implemented by child contracts to blacklist and lift from list accounts with red flags*
+*A light module implemented by any child contracts to blacklist and lift from list accounts with red flags*
 
 ## *To Run What have been achieved so far after cloning the repository*
 

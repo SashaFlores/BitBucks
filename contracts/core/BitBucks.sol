@@ -15,10 +15,12 @@ import '@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol';
 /**
  * @title BitBucks
  * @author Sasha Flores
- * @dev By inheriting `MinterManager` contracrt, deployer `owner`
- * assigns `manager` to minter` & `manager` set `allowance` for
- * each `minter` that will have to mint the exact same `allowance
- * set by manager. `minter` has to be verified prior to `mint`
+ * @dev By inheriting `Manager` contract, deployer is `owner`
+ * check contract for owner scope of responsibilities.
+ * `manager` is financially responsible for setting, incrementing, or decrementing 
+ * `allowance` for each `minter`.
+ * `minter` have to mint the exact same `allowance`
+ * `minter` has to be verified prior to `mint`
  */
 contract BitBucks is 
     Initializable,
@@ -150,12 +152,12 @@ contract BitBucks is
     }
 
     /**
-     * @notice minter can `mint` to `to` of the exact `amount`
-     * assigned by manager, to can be account or smart contract
+     * @notice minter can `mint` the exact `amount` to `to` assigned by manager
+     * `to` can be account or smart contract
      * 
      * Requirements:
-     * - caller is an authorized `minter` with valid `IDToken` & `to`
-     *   is non zero address, otherwise function revert `BitBucks_ZeroAddress_or_unverified`
+     * - caller is an authorized `minter` with valid `IDToken` & `to` is non zero address
+     *   otherwise function revert `BitBucks_ZeroAddress_or_unverified`
      * - contract isnot paused
      * - `minter` isnot blacklisted 
      * - `amount` is the same as `allowance` or reverts
@@ -195,9 +197,9 @@ contract BitBucks is
      * - `minter` isnot blacklisted 
      * - `amount` is the same as `allowance` or reverts
      * 
-     * Emits {Mint} event - check IBitBucks
+     * Emits {Burn} event - check IBitBucks
      */
-    function burn(address from, uint256 amount) public virtual override onlyManager(_msgSender(), from) {
+    function burn(address from, uint256 amount) public virtual override onlyOwner {
         _burn(from, amount);
         emit Burn(_msgSender(), from, amount);
     }

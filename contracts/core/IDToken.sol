@@ -66,7 +66,7 @@ contract IDToken is
     uint256 public constant US_INVERSTOR = 4;
     uint256 public constant INT_INVESTOR = 5;
 
-
+    
     modifier availIds() {
         uint256[5] memory ids;
         for(uint256 i = 0; i <= ids.length; i++) {
@@ -102,7 +102,7 @@ contract IDToken is
         address manager, 
         string memory uri_
     ) 
-    external 
+    public 
     initializer 
     virtual 
     override 
@@ -110,7 +110,7 @@ contract IDToken is
     notZeroAddress(upgrader)
     notZeroAddress(manager)
     {
-        __EIP712_init('IDToken', '1.0.0');
+        __EIP712_init('BitBucks', '1.0.0');
         __ERC1155_init(uri_);
         __Blacklist_init();  
         __AccessControl_init();
@@ -159,20 +159,12 @@ contract IDToken is
     }
 
     function pauseOps() external virtual {
-        if(
-            !hasRole(DEFAULT_ADMIN_ROLE, _msgSender()) ||
-            !hasRole(UPGRADER_ROLE, _msgSender())
-        )
-            revert IDToken_MisingRole();
+        require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()) || hasRole(UPGRADER_ROLE, _msgSender()), 'admin or upgrader');
         _pause();
     }
 
-    function unpauseOps() external virtual {
-        if(
-            !hasRole(DEFAULT_ADMIN_ROLE, _msgSender()) ||
-            !hasRole(UPGRADER_ROLE, _msgSender())
-        )
-            revert IDToken_MisingRole();
+    function unpauseOps() external virtual  {
+        require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()) || hasRole(UPGRADER_ROLE, _msgSender()), 'admin or upgrader');
         _unpause();
     }
 
@@ -293,9 +285,10 @@ contract IDToken is
         _safeTransferFrom(from, to, 1, 1, '');
     }
 
-    function verifySignature(address signer, bytes32 txHash, bytes memory signature) public view returns(bool) {
+    function verifySignature(address signer, bytes32 txHash, bytes memory signature) public view virtual returns(bool) {
         return hasRole(MINTER_ROLE, signer) && SignatureCheckerUpgradeable.isValidSignatureNow(signer, txHash, signature);
     }
+
 
     function _incrementNonce(address signer) internal virtual returns(uint256 current) {
         CountersUpgradeable.Counter storage nonce = nonces[signer];
