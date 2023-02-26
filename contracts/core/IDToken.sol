@@ -321,8 +321,7 @@ contract IDToken is
         super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
     }
 
-    function _authorizeUpgrade(address newImplementation) internal virtual override onlyRole(UPGRADER_ROLE) notZeroAddress(newImplementation) {
+    function _authorizeUpgrade(address newImplementation) internal virtual override onlyRole(UPGRADER_ROLE) whenPaused notZeroAddress(newImplementation) {
         require(AddressUpgradeable.isContract(newImplementation), 'new implementation not contract');
-        require(paused(), 'pause ops before upgrade');
     }
 }
