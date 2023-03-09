@@ -28,7 +28,7 @@ abstract contract Manager is Initializable, IManager, OwnableUpgradeable {
     }
 
     modifier notZeroAddress(address addr) {
-        if(_msgSender() == address(0))
+        if(addr == address(0))
             revert Manager_ZeroAddress();
         _;
     }
@@ -36,6 +36,8 @@ abstract contract Manager is Initializable, IManager, OwnableUpgradeable {
     function __Manager_init() internal onlyInitializing {
         __Ownable_init();
     }
+
+    function __Manager_init_unchained() internal onlyInitializing {}
 
     /**
      * @param manager address
@@ -63,7 +65,7 @@ abstract contract Manager is Initializable, IManager, OwnableUpgradeable {
             revert Manager_AssigneeExists();
  
         if(assignee == manager)
-            revert Manager_SameAddress();
+            revert Manager_SameAddress(manager, assignee);
 
         _managers[manager].push(assignee);
         exists[assignee] = true;
@@ -98,10 +100,11 @@ abstract contract Manager is Initializable, IManager, OwnableUpgradeable {
             revert Manager_AssigneeNotExists();
 
         if(!isManager(prevManager, assignee))
-            revert Manager_Mismatch();
+            revert Manager_Mismatch(prevManager, assignee);
         
         if(prevManager == newManager)
-            revert Manager_SameAddress();
+            revert Manager_SameAddress(prevManager, newManager);
+
         uint256 index = assigneeIndex(prevManager, assignee);
         if(index >= _managers[prevManager].length) return;
         for(uint256 i = index; i < _managers[prevManager].length - 1; i++) {
@@ -137,12 +140,13 @@ abstract contract Manager is Initializable, IManager, OwnableUpgradeable {
      * @notice removes `manager` address completely 
      * reverts if assignees are still assigned to `manager`
      */
-    function removeManager(address manager) public virtual {
+    function removeManager(address manager) public virtual override onlyOwner {
         if(_managers[manager].length <= 0) {
             delete _managers[manager]; 
         } else {
             revert Manager_NotEmpty();
-        }                 
+        }         
+        emit ManagerRemoved(manager);
     }
 
     /**
@@ -151,13 +155,13 @@ abstract contract Manager is Initializable, IManager, OwnableUpgradeable {
      * @notice returns `assigneeIndex` in `manager` array
      * reverts if `assignee` doesn't exist in manager array
      */
-    function assigneeIndex(address manager, address assignee) public view returns(uint256) {
+    function assigneeIndex(address manager, address assignee) public view virtual override returns(uint256) {
         for(uint256 i = 0; i < _managers[manager].length; i++) {
             if(assignee == _managers[manager][i]) {
                return i;
             }
         }
-        revert Manager_AssigneeNotExists();
+        revert Manager_Mismatch(manager, assignee);
     }
 
     /**

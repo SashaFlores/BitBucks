@@ -55,12 +55,12 @@ module.exports = {
       url: `https://sepolia.infura.io/v3/${process.env.INFURA_API_KEY}`,
       chainId: 11155111,
       accounts: [
-        `0x${process.env.ADMIN_KEY}`, 
-        `0x${process.env.UPGRADER_KEY}`, 
-        `0x${process.env.OTHER_KEY}`, 
-        `0x${process.env.MINTER_KEY}`,
-        //`0x${process.env.OWNER_KEY}`,
-        `0x${process.env.MANAGER_KEY}`,
+        // `0x${process.env.ADMIN_KEY}`, 
+        // `0x${process.env.UPGRADER_KEY}`, 
+        // `0x${process.env.OTHER_KEY}`, 
+        // `0x${process.env.MINTER_KEY}`,
+        // //`0x${process.env.OWNER_KEY}`,
+        // `0x${process.env.MANAGER_KEY}`,
       ],
       blockConfirmations: 5,
       timeout: 600000,
@@ -83,36 +83,18 @@ module.exports = {
     }
   },
   namedAccounts: {
-    admin: {
+    deployer: {
       default: 0,
       sepolia: process.env.ADMIN
     },
-    upgrader: {
+    manager1: {
       default: 1,
-      sepolia: process.env.UPGRADER
-    },
-    other: {
-      default: 2,
-      sepolia: process.env.OTHER
-    },
-    minter: {
-      default: 3,
-      sepolia: process.env.MINTER
-    },
-    deployer: {
-      default: 4,
-      sepolia: process.env.OWNER
-    },
-    manager: {
-      default: 5,
-      sepolia: process.env.MANAGER
-    },
-    minter2: {
-      default: 6
+      sepolia: process.env.MANAGER1
     },
     manager2: {
-      default: 7
-    },
+      default: 2,
+      sepolia: process.env.MANAGER2
+    }
   },
   gasReporter: {
     enabled: true,
@@ -144,11 +126,11 @@ module.exports = {
   etherscan: {
     apiKey: {
       // mainnet: process.env.ETHER_API,
-      // polygon: process.env.POLYGON_API,
+      polygon: process.env.POLYGON_API,
       // binance: process.env.BNB_API,
       sepolia: process.env.SEPOLIA_API,
       // goerli: process.env.ETHER_API,
-      // mumbai: process.env.POLYGON_API,
+      mumbai: process.env.POLYGON_API,
       // bnbTest:  process.env.BNB_API,
     },
   },

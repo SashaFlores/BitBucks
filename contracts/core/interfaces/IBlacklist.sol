@@ -17,6 +17,6 @@ interface IBlacklist {
 
     function listAddress(address addr) external returns(bool);
 
-    function liftFromlist(address addr) external returns(bool);
+    function liftFromList(address addr) external returns(bool);
 
 }

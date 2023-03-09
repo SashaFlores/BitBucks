@@ -26,6 +26,9 @@ abstract contract Blacklist is Initializable, IBlacklist, OwnableUpgradeable {
         __Ownable_init();
     }
 
+    function __Blacklist_init_unchained() internal onlyInitializing{}
+
+
     /**
      * @notice returns if address `addr` is blacklisted
      */
@@ -62,7 +65,7 @@ abstract contract Blacklist is Initializable, IBlacklist, OwnableUpgradeable {
      * 
      * Emits {AccountUnlisted} event
      */
-    function liftFromlist(address addr) public virtual override onlyOwner returns(bool) {
+    function liftFromList(address addr) public virtual override onlyOwner returns(bool) {
         if(!isBlacklisted(addr))
             revert Blacklist_NotListed();
 

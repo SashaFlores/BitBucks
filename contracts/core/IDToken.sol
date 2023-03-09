@@ -3,7 +3,7 @@ pragma solidity >=0.8.10 <0.9.0;
 
 import '@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
-import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
+// import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol';
@@ -12,6 +12,7 @@ import '@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable
 import '@openzeppelin/contracts-upgradeable/utils/cryptography/SignatureCheckerUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol';
 import './Blacklist.sol';
+import './Manager.sol';
 import './interfaces/IDTokenInterface.sol';
 
 /**
@@ -27,7 +28,7 @@ contract IDToken is
     IDTokenInterface, 
     EIP712Upgradeable, 
     ERC1155Upgradeable, 
-    AccessControlUpgradeable, 
+    Manager, 
     Blacklist,
     UUPSUpgradeable, 
     PausableUpgradeable, 
@@ -77,16 +78,9 @@ contract IDToken is
         _;
     }
 
-    modifier notZeroAddress(address addr) {
-        if(addr == address(0))
-            revert IDToken_ZeroAddress();
-        _;
-    }
 
 
     /**
-     * @param upgrader address, upgrade, pause & unpause ops
-     * @param manager address, update URI & sign Business transfer
      * @param uri_ string, metadata of tokens by replacing `id` number
      * Requirements:
      * non zero address isn't allowed 
@@ -96,37 +90,20 @@ contract IDToken is
     
 
     // solhint-disable-next-line func-name-mixedcase
-    function __IDToken_init
-    (
-        address upgrader, 
-        address manager, 
-        string memory uri_
-    ) 
-    public 
-    initializer 
-    virtual 
-    override 
-    notZeroAddress(_msgSender())
-    notZeroAddress(upgrader)
-    notZeroAddress(manager)
-    {
+    function __IDToken_init(string memory uri_) public initializer virtual override notZeroAddress(_msgSender()) {
         __EIP712_init('BitBucks', '1.0.0');
         __ERC1155_init(uri_);
         __Blacklist_init();  
-        __AccessControl_init();
+        __Manager_init();
         __UUPSUpgradeable_init();
         __Pausable_init();
 
-        _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
-        _setupRole(UPGRADER_ROLE, upgrader);
-        _setupRole(MANAGER_ROLE, manager);
     }
 
-    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155Upgradeable, AccessControlUpgradeable) returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155Upgradeable) returns (bool) {
         return
             interfaceId == type(IERC1155Upgradeable).interfaceId ||
             interfaceId == type(IERC1155MetadataURIUpgradeable).interfaceId ||
-            interfaceId == type(AccessControlUpgradeable).interfaceId ||
             super.supportsInterface(interfaceId);
     }
 
@@ -158,21 +135,23 @@ contract IDToken is
         return verified[account];
     }
 
-    function pauseOps() external virtual {
-        require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()) || hasRole(UPGRADER_ROLE, _msgSender()), 'admin or upgrader');
+    function pauseOps() external virtual onlyOwner {
+        //require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()) || hasRole(UPGRADER_ROLE, _msgSender()), 'admin or upgrader');
+
         _pause();
     }
 
-    function unpauseOps() external virtual  {
-        require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()) || hasRole(UPGRADER_ROLE, _msgSender()), 'admin or upgrader');
+    function unpauseOps() external virtual onlyOwner {
+        // require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()) || hasRole(UPGRADER_ROLE, _msgSender()), 'admin or upgrader');
         _unpause();
     }
 
-    function exists(uint256 id) external view virtual override availIds returns(bool) {
+    function minted(uint256 id) external view virtual override availIds returns(bool) {
         return IDToken.totalSupply(id) > 0;
     }
 
-    function updateURI(string memory uri_) external virtual override onlyRole(MANAGER_ROLE) whenNotPaused {
+
+    function updateURI(string memory uri_) external virtual override onlyOwner whenNotPaused {
         _setURI(uri_);
     }
     /**
@@ -270,23 +249,26 @@ contract IDToken is
      * 
      * Emits a {TransferSingle} - check ERC1155
      */
+
+    // TO DO: manager signature
     function transferBusiness(address from, address to, bytes[] memory signatures) public virtual override NotBlacklisted whenNotPaused {
         require(signatures.length == 2, 'Owner and manager signatures are needed');
         bytes32 txHash = keccak256(abi.encode(TRANSFERBUSINESS_TYPEHASH, from, to, _incrementNonce(_msgSender())));
         bytes32 hash = _hashTypedDataV4(txHash);
         if(!verifySignature(_msgSender(), hash, signatures[0]))
             revert IDToken_invalidSignature(_msgSender());
-        if(
-            !SignatureCheckerUpgradeable.isValidSignatureNow(_msgSender(), hash, signatures[1]) &&
-            !hasRole(MANAGER_ROLE, _msgSender())
-        )
-            revert IDToken_invalidSignature(_msgSender());
+
+        // if(
+        //     !SignatureCheckerUpgradeable.isValidSignatureNow(_msgSender(), hash, signatures[1]) &&
+        //     !hasRole(MANAGER_ROLE, _msgSender())
+        // )
+        //     revert IDToken_invalidSignature(_msgSender());
 
         _safeTransferFrom(from, to, 1, 1, '');
     }
 
     function verifySignature(address signer, bytes32 txHash, bytes memory signature) public view virtual returns(bool) {
-        return hasRole(MINTER_ROLE, signer) && SignatureCheckerUpgradeable.isValidSignatureNow(signer, txHash, signature);
+        return isAssignee(signer) && SignatureCheckerUpgradeable.isValidSignatureNow(signer, txHash, signature);
     }
 
 
@@ -321,7 +303,7 @@ contract IDToken is
         super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
     }
 
-    function _authorizeUpgrade(address newImplementation) internal virtual override onlyRole(UPGRADER_ROLE) whenPaused notZeroAddress(newImplementation) {
+    function _authorizeUpgrade(address newImplementation) internal virtual override onlyOwner whenPaused {
         require(AddressUpgradeable.isContract(newImplementation), 'new implementation not contract');
     }
 }

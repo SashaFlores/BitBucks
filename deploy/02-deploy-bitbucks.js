@@ -9,7 +9,7 @@ module.exports = async({getNamedAccounts, deployments}) => {
     const idToken = await get('IDToken')
     console.log(`IDToken Contract address is ${idToken.address}`)
 
-    log(`-----Preparing Contracts for Deployment on ${networkName} -------`)
+    log(`-----Preparing BitBucks Contract for Deployment on ${networkName} -------`)
 
     const stableToken = await deploy('BitBucks', {
         contract: 'BitBucks',
@@ -36,4 +36,4 @@ module.exports = async({getNamedAccounts, deployments}) => {
     console.log(`Owner:  ${contractOwner}`)
    
 }
-module.exports.tags = ['all', 'BitBucks']
+module.exports.tags = ['all', 'bit']

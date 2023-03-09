@@ -12,7 +12,7 @@ interface IDTokenInterface {
 
     error IDToken_invalidSignature(address signer);
 
-    function __IDToken_init(address upgrader, address manager, string memory uri_) external;
+    function __IDToken_init(string memory uri_) external;
 
     function totalSupply(uint256 id) external returns(uint256);
 
@@ -28,5 +28,5 @@ interface IDTokenInterface {
 
     function updateURI(string memory uri_) external;
 
-    function exists(uint256 id) external returns(bool);
+    function minted(uint256 id) external returns(bool);
 }
