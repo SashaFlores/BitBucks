@@ -119,7 +119,7 @@ contract IDToken is
         return '1.0.0';
     }
 
-    function chainId() public view returns(uint256) {
+    function chainId() public view virtual returns(uint256) {
         uint256 id;
         assembly {
             id := chainid()
@@ -136,13 +136,10 @@ contract IDToken is
     }
 
     function pauseOps() external virtual onlyOwner {
-        //require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()) || hasRole(UPGRADER_ROLE, _msgSender()), 'admin or upgrader');
-
         _pause();
     }
 
     function unpauseOps() external virtual onlyOwner {
-        // require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()) || hasRole(UPGRADER_ROLE, _msgSender()), 'admin or upgrader');
         _unpause();
     }
 
@@ -250,20 +247,30 @@ contract IDToken is
      * Emits a {TransferSingle} - check ERC1155
      */
 
-    // TO DO: manager signature
+
     function transferBusiness(address from, address to, bytes[] memory signatures) public virtual override NotBlacklisted whenNotPaused {
         require(signatures.length == 2, 'Owner and manager signatures are needed');
+
         bytes32 txHash = keccak256(abi.encode(TRANSFERBUSINESS_TYPEHASH, from, to, _incrementNonce(_msgSender())));
         bytes32 hash = _hashTypedDataV4(txHash);
-        if(!verifySignature(_msgSender(), hash, signatures[0]))
-            revert IDToken_invalidSignature(_msgSender());
 
-        // if(
-        //     !SignatureCheckerUpgradeable.isValidSignatureNow(_msgSender(), hash, signatures[1]) &&
-        //     !hasRole(MANAGER_ROLE, _msgSender())
-        // )
-        //     revert IDToken_invalidSignature(_msgSender());
+        address assignee;
+        address manager;
 
+        for(uint i = 0; i < signatures.length; i++) {
+            bytes memory signature = signatures[i];
+            if(i == 0) {
+                require(verifySignature(_msgSender(), hash, signature), 'invalid owner signature');
+                assignee = _msgSender();
+            } else {
+                require(
+                    isManager(_msgSender(), assignee) && 
+                    SignatureCheckerUpgradeable.isValidSignatureNow(_msgSender(), hash, signature), 
+                    'invalid manager siganture'
+                );
+                manager = _msgSender();
+            }
+        }
         _safeTransferFrom(from, to, 1, 1, '');
     }
 
