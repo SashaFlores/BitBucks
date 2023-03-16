@@ -3,7 +3,6 @@ pragma solidity >=0.8.10 <0.9.0;
 
 import '@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
-// import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol';
@@ -46,12 +45,6 @@ contract IDToken is
     mapping(address => CountersUpgradeable.Counter) private nonces;
 
 
-    /**
-     * constant varaibles - non storage variables
-     */
-    bytes32 private constant UPGRADER_ROLE = keccak256(abi.encodePacked('UPGRADER_ROLE'));
-    bytes32 private constant MINTER_ROLE = keccak256(abi.encodePacked('MINTER_ROLE'));
-    bytes32 private constant MANAGER_ROLE = keccak256(abi.encodePacked('MANAGER_ROLE'));
 
     // keccak256('Mint(uint256 id,uint256 deadline,uint256 nonce)')
     bytes32 private constant MINT_TYPEHASH = 0x34a81dce1fc51da43c6636a0c631893770c79195cd9e729fab52685f029d1d4c;
@@ -85,7 +78,7 @@ contract IDToken is
      * Requirements:
      * non zero address isn't allowed 
      * 
-     * Emits a {Rolegranted} event - check AccessControl
+     * Emits a {OwnershipTransfer} event - check Ownable
      */
     
 
@@ -164,7 +157,7 @@ contract IDToken is
      * Requirements:
      * signature within deadline
      * balance of `signer` of token `id` should be zero before minting
-     * `signer` has `MINTER_ROLE`
+     * `signer` is an assignee
      * `signer` isnot blacklisted
      * contract isnot paused
      * `id` is from `availIds`
@@ -211,7 +204,7 @@ contract IDToken is
      * 
      * Requirements:
      * from `from` has balance of token `id`
-     * caller has `MINTER_ROLE`
+     * caller is an assignee
      * `signer` isnot blacklisted
      * contract isnot paused
      * `id` is from `availIds`
@@ -226,7 +219,7 @@ contract IDToken is
 
         _burn(_msgSender(), id, 1);
         supply[id] --;
-        verified[_msgSender()] = true;
+        verified[_msgSender()] = false;
     }
 
     /**
@@ -241,8 +234,9 @@ contract IDToken is
      * 
      * Requirements:
      * only Business Token is transferrable
-     * a valid `signature` from `MANAGER_ROLE` assignee is needed
-     * a valid `signature` from `MINTER_ROLE` assignee is needed
+     * 2 signatures are needed to transfer token
+     * a valid first `signature` from assignee is needed
+     * a valid second `signature` from manager of assignee is needed
      * 
      * Emits a {TransferSingle} - check ERC1155
      */

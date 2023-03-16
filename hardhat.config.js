@@ -94,6 +94,9 @@ module.exports = {
     manager2: {
       default: 2,
       sepolia: process.env.MANAGER2
+    },
+    mocker: {
+      default: 3,
     }
   },
   gasReporter: {

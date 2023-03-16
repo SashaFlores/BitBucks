@@ -24,6 +24,7 @@ abstract contract Blacklist is Initializable, IBlacklist, OwnableUpgradeable {
 
     function __Blacklist_init() internal onlyInitializing {
         __Ownable_init();
+        require(msg.sender != address(0), 'Blacklist: unauthorized zero address');
     }
 
     function __Blacklist_init_unchained() internal onlyInitializing{}

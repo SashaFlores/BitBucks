@@ -17,7 +17,7 @@ import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 abstract contract Manager is Initializable, IManager, OwnableUpgradeable {
 
     mapping(address => address[]) private _managers;
-    mapping(address => bool) internal exists;
+    mapping(address => bool) private exists;
 
 
 
@@ -33,7 +33,7 @@ abstract contract Manager is Initializable, IManager, OwnableUpgradeable {
         _;
     }
 
-    function __Manager_init() internal onlyInitializing {
+    function __Manager_init() internal onlyInitializing notZeroAddress(_msgSender()) {
         __Ownable_init();
     }
 

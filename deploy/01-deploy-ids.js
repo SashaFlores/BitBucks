@@ -1,15 +1,15 @@
 const { ethers, network } = require('hardhat')
 const { assert } = require('chai')
-// const { DEFAULT_ADMIN_ROLE, UPGRADER_ROLE, MANAGER_ROLE } = require('./../utils/constants')
+
 
 module.exports = async({getNamedAccounts, deployments}) => {
     const { deploy, log } = deployments;
     const { deployer } = await getNamedAccounts();
-    console.log({namedAccounts: await getNamedAccounts()})
+    // console.log({namedAccounts: await getNamedAccounts()})
 
     const networkName = network.name
   
-    log(`-----Preparing ID Token Contract for Deployment on ${networkName} -------`)
+    // log(`Preparing ID Token Contract for Deployment on ${networkName}`)
 
     const idContract = await deploy('IDToken', {
         contract: 'IDToken',
@@ -34,7 +34,7 @@ module.exports = async({getNamedAccounts, deployments}) => {
     })
     const IDToken = await ethers.getContractFactory('IDToken', deployer)
     const idToken = await IDToken.attach(idContract.address)
-    log(`01- IDToken Proxy deployed at: ${idToken.address}`)
+    log(`--------------------01- IDToken Proxy deployed at: ${idToken.address} on ${networkName} --------------------------------------`)
    
     await idToken.connect(deployer)
 

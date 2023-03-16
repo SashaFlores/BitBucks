@@ -1,9 +1,9 @@
 const { ethers, deployments, getNamedAccounts, getUnnamedAccounts } = require('hardhat')
-const { expect, assert } = require('chai')
-const { addressZero } = require('../../utils/constants')
+const { expect } = require('chai')
+const { ZERO_ADDRESS } = require('../../utils/constants')
 
 
-describe('Blacklist', function() {
+function sharedBlacklistTest(getContract) {
 
    let deployer, users, blacklist
    
@@ -21,7 +21,7 @@ describe('Blacklist', function() {
             expect(await blacklist.owner()).to.equal(deployer)
         })
         it('reject ownership transfer to zero address', async function() {
-            expect(blacklist.transferOwnership(addressZero)).to.be.rejectedWith('Ownable: new owner is the zero address')
+            expect(blacklist.transferOwnership(ZERO_ADDRESS)).to.be.rejectedWith('Ownable: new owner is the zero address')
         })
         it('only owner can transfer ownership', async function() {
             expect(blacklist.transferOwnership(users[0], {from: users[1]})).to.be.revertedWith('Ownable: caller is not the owner')
@@ -41,8 +41,8 @@ describe('Blacklist', function() {
         })
         it('owner renounce ownership and emits event', async function() {
             await blacklist.renounceOwnership()
-            expect(await blacklist.owner()).to.equal(addressZero)
-            expect(blacklist.renounceOwnership()).to.emit(blacklist, 'OwnershipTransfer').withArgs(deployer, addressZero)
+            expect(await blacklist.owner()).to.equal(ZERO_ADDRESS)
+            expect(blacklist.renounceOwnership()).to.emit(blacklist, 'OwnershipTransfer').withArgs(deployer, ZERO_ADDRESS)
         })
     })
 
@@ -54,7 +54,7 @@ describe('Blacklist', function() {
             expect(blacklist.listAddress(users[1], {from: users[0]})).to.be.revertedWith('Ownable: caller is not the owner')
         })
         it('reverts if zero address', async function() {
-            expect(blacklist.listAddress(addressZero)).to.be.revertedWithCustomError(blacklist, 'Blacklist_ZeroAddress')
+            expect(blacklist.listAddress(ZERO_ADDRESS)).to.be.revertedWithCustomError(blacklist, 'Blacklist_ZeroAddress')
         })
         it('reverts if already listed', async function() {
             await blacklist.listAddress(users[1]) 
@@ -85,5 +85,6 @@ describe('Blacklist', function() {
             expect(await blacklist.isBlacklisted(users[3])).to.equal(false)
         })
     })
-})
+}
+module.exports = { sharedBlacklistTest }
 

@@ -1,8 +1,9 @@
 const { ethers, deployments, getNamedAccounts, getUnnamedAccounts } = require('hardhat')
 const { expect, assert } = require('chai')
-const { addressZero } = require('../../utils/constants')
+const { ZERO_ADDRESS } = require('../../utils/constants')
 
-describe('Manager', function() {
+
+function sharedManagerTest(getContract) {
     let deployer, manager, manager1, manager2, users, _managers, user0Index, manager1Assignees, user1Index, manager2Assignees
 
     beforeEach(async function() {
@@ -20,7 +21,7 @@ describe('Manager', function() {
             expect(await manager.owner()).to.equal(deployer)
         })
         it('reject ownership transfer to zero address', async function() {
-            expect(manager.transferOwnership(addressZero)).to.be.rejectedWith('Ownable: new owner is the zero address')
+            expect(manager.transferOwnership(ZERO_ADDRESS)).to.be.rejectedWith('Ownable: new owner is the zero address')
         })
         it('only owner can transfer ownership', async function() {
             expect(manager.transferOwnership(manager1, {from: manager2})).to.be.revertedWith('Ownable: caller is not the owner')
@@ -40,8 +41,8 @@ describe('Manager', function() {
         })
         it('owner renounce ownership and emits event', async function() {
             await manager.renounceOwnership()
-            expect(await manager.owner()).to.equal(addressZero)
-            expect(manager.renounceOwnership()).to.emit(manager, 'OwnershipTransfer').withArgs(deployer, addressZero)
+            expect(await manager.owner()).to.equal(ZERO_ADDRESS)
+            expect(manager.renounceOwnership()).to.emit(manager, 'OwnershipTransfer').withArgs(deployer, ZERO_ADDRESS)
         })
     })
 
@@ -59,8 +60,8 @@ describe('Manager', function() {
         })
 
         it('reject address zero', async function() {
-            expect(manager.assignManager(addressZero, users[0])).to.be.revertedWithCustomError(manager, 'Manager_ZeroAddress')
-            expect(manager.assignManager(manager1, addressZero)).to.be.revertedWithCustomError(manager, 'Manager_ZeroAddress')
+            expect(manager.assignManager(ZERO_ADDRESS, users[0])).to.be.revertedWithCustomError(manager, 'Manager_ZeroAddress')
+            expect(manager.assignManager(manager1, ZERO_ADDRESS)).to.be.revertedWithCustomError(manager, 'Manager_ZeroAddress')
         })
 
         it('reject same address for manager and assignee', async function() {
@@ -135,7 +136,7 @@ describe('Manager', function() {
             expect(manager.changeManager(manager2, manager1, users[1])).to.not.emit('ManagerChanged')
         })
         it('reverts zer address for new manager', async function() {
-            expect(manager.changeManager(addressZero, manager1, users[1])).to.be.revertedWithCustomError(manager, 'Manager_ZeroAddress')
+            expect(manager.changeManager(ZERO_ADDRESS, manager1, users[1])).to.be.revertedWithCustomError(manager, 'Manager_ZeroAddress')
         })
         it('emits manager changed event', async function() {
             expect(manager.changeManager(manager2, manager1, users[1])).to.emit(manager, 'ManagerChanged').withArgs(manager1, manager2)
@@ -227,5 +228,6 @@ describe('Manager', function() {
             expect(await manager.managerAssigneesCount(manager2)).to.equal(0)
         })
     })
-})
+}
+module.exports = { sharedManagerTest }
 
