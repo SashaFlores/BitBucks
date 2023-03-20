@@ -20,7 +20,8 @@ interface IBitBucks {
     error BitBucks_ZeroAddress_or_unverified();
 
     error BitBucks_NonExistMinter();
-
+    
+    // solhint-disable-next-line func-name-mixedcase
     function __BitBucks_init(address idContract) external;
 
     function setAllowance(address minter, uint256 allowance) external;

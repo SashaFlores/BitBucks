@@ -2,6 +2,7 @@
 pragma solidity >=0.8.10 <0.9.0;
 
 import './interfaces/IManager.sol';
+import './Blacklist.sol';
 import '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 
@@ -14,7 +15,7 @@ import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
  * manager duties are segregated in the child contract as see fit.
  */
 
-abstract contract Manager is Initializable, IManager, OwnableUpgradeable {
+abstract contract Manager is Initializable, IManager, Blacklist {
 
     mapping(address => address[]) private _managers;
     mapping(address => bool) private exists;
@@ -32,12 +33,15 @@ abstract contract Manager is Initializable, IManager, OwnableUpgradeable {
             revert Manager_ZeroAddress();
         _;
     }
-
+    /* solhint-disable func-name-mixedcase */
     function __Manager_init() internal onlyInitializing notZeroAddress(_msgSender()) {
-        __Ownable_init();
+        __Blacklist_init();
     }
 
-    function __Manager_init_unchained() internal onlyInitializing {}
+    function __Manager_init_unchained() internal onlyInitializing {
+        __Blacklist_init_unchained();
+    }
+    /* solhint-enable func-name-mixedcase */
 
     /**
      * @param manager address
@@ -59,6 +63,7 @@ abstract contract Manager is Initializable, IManager, OwnableUpgradeable {
     override 
     notZeroAddress(assignee) 
     notZeroAddress(manager) 
+    NotBlacklisted(assignee)
     onlyOwner 
     {
         if(isAssignee(assignee))

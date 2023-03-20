@@ -4,7 +4,6 @@ pragma solidity >=0.8.10 <0.9.0;
 import './Manager.sol';
 import './interfaces/IBitBucks.sol';
 import './interfaces/IDTokenInterface.sol';
-import './Blacklist.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import '@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol';
@@ -26,7 +25,6 @@ contract BitBucks is
     Initializable,
     IBitBucks,
     Manager,
-    Blacklist,
     UUPSUpgradeable,
     ERC20Upgradeable,
     PausableUpgradeable,
@@ -36,20 +34,31 @@ contract BitBucks is
 
     mapping(address => uint256) private mintAllowances;
   
-
+     /* solhint-disable const-name-snakecase */
     string private constant _name = 'BitBucks';
     string private constant _symbol = 'BITS';
+    /* solhint-enable const-name-snakecase */
 
+    // solhint-disable-next-line var-name-mixedcase
     IDTokenInterface private ID;
 
     /**
      * @param idContract address, `IDToken` contract address
      */
-
-    function __BitBucks_init(address idContract) public virtual override initializer {
+    // solhint-disable-next-line func-name-mixedcase
+    function __BitBucks_init
+    (
+        address idContract
+    ) 
+    public 
+    virtual 
+    override 
+    initializer 
+    notZeroAddress(idContract) 
+    notZeroAddress(_msgSender()) 
+    {
         __ERC20_init('BitBucks', 'BITS');
         __Manager_init();
-        __Blacklist_init();
         __Pausable_init();
         __UUPSUpgradeable_init();
 
@@ -76,7 +85,7 @@ contract BitBucks is
     virtual 
     override 
     onlyManager(_msgSender(), minter) 
-    NotBlacklisted 
+    NotBlacklisted(minter) 
     whenNotPaused 
     nonReentrant
     {
@@ -104,7 +113,7 @@ contract BitBucks is
     virtual 
     override 
     onlyManager(_msgSender(), minter) 
-    NotBlacklisted
+    NotBlacklisted(minter)
     nonReentrant
     whenNotPaused 
     {
@@ -136,7 +145,7 @@ contract BitBucks is
     virtual 
     override 
     onlyManager(_msgSender(), minter) 
-    NotBlacklisted
+    NotBlacklisted(minter)
     nonReentrant
     whenNotPaused 
     {
@@ -164,7 +173,7 @@ contract BitBucks is
      * 
      * Emits {Mint} event - check IBitBucks
      */
-    function mint(address to, uint256 amount) public virtual override NotBlacklisted nonReentrant whenNotPaused {
+    function mint(address to, uint256 amount) public virtual override NotBlacklisted(to) nonReentrant whenNotPaused {
         _notMinter(_msgSender());
         if(to == address(0) || !ID.isVerified(_msgSender())) 
             revert BitBucks_ZeroAddress_or_unverified();
@@ -223,7 +232,7 @@ contract BitBucks is
     }
     
     function _authorizeUpgrade(address newImplementation) internal virtual override onlyOwner {
-        require(AddressUpgradeable.isContract(newImplementation), 'BitBucks: new Implementation must be a contract');
+        require(AddressUpgradeable.isContract(newImplementation), 'BitBucks: not a contract');
         require(newImplementation != address(0), 'BitBucks: zero address error');
     }
 

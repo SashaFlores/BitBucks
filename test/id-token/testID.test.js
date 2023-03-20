@@ -27,7 +27,12 @@ describe('Test ID Token', function() {
     describe('run shared manager test', function() {
         sharedManagerTest(() => test)
     })
-    
+
+    // TODO: test EOA mint & signature after cryptographic message.
+
+    // TODO: test contract signature
+
+    // TODO: import and run blacklist test
    
 })
 

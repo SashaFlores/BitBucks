@@ -3,7 +3,6 @@
   "rules": {
     "no-unused-vars": "error",
     "payable-fallback": "error",
-    "reason-string": ["warn",{"maxLength":32}],
     "quotes": ["error","single"],
     "const-name-snakecase": "error",
     "contract-name-camelcase": "error",

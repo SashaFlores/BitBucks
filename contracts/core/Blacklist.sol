@@ -15,19 +15,20 @@ abstract contract Blacklist is Initializable, IBlacklist, OwnableUpgradeable {
 
     mapping (address => bool) private _blacklist;
 
-    modifier NotBlacklisted {
-        if(isBlacklisted(_msgSender()))
+    modifier NotBlacklisted(address caller) {
+        if(isBlacklisted(caller))
             revert Blacklist_Listed();
         _;
     }
 
-
+    /* solhint-disable func-name-mixedcase */
     function __Blacklist_init() internal onlyInitializing {
         __Ownable_init();
         require(msg.sender != address(0), 'Blacklist: unauthorized zero address');
     }
 
     function __Blacklist_init_unchained() internal onlyInitializing{}
+    /* solhint-enable func-name-mixedcase */
 
 
     /**
@@ -46,7 +47,7 @@ abstract contract Blacklist is Initializable, IBlacklist, OwnableUpgradeable {
      * 
      * Emits {AccountBlacklisted} event
      */
-    function listAddress(address addr) public virtual override onlyOwner NotBlacklisted returns(bool) {
+    function listAddress(address addr) public virtual override onlyOwner NotBlacklisted(addr) returns(bool) {
         if(addr == address(0)) 
             revert Blacklist_ZeroAddress();
 

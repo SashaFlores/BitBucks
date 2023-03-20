@@ -28,7 +28,6 @@ contract IDToken is
     EIP712Upgradeable, 
     ERC1155Upgradeable, 
     Manager, 
-    Blacklist,
     UUPSUpgradeable, 
     PausableUpgradeable, 
     ReentrancyGuardUpgradeable 
@@ -45,7 +44,7 @@ contract IDToken is
     mapping(address => CountersUpgradeable.Counter) private nonces;
 
 
-
+    
     // keccak256('Mint(uint256 id,uint256 deadline,uint256 nonce)')
     bytes32 private constant MINT_TYPEHASH = 0x34a81dce1fc51da43c6636a0c631893770c79195cd9e729fab52685f029d1d4c;
     // keccak256('Burn(address from,uint256 id,uint256 nonce)')
@@ -71,8 +70,6 @@ contract IDToken is
         _;
     }
 
-
-
     /**
      * @param uri_ string, metadata of tokens by replacing `id` number
      * Requirements:
@@ -80,13 +77,10 @@ contract IDToken is
      * 
      * Emits a {OwnershipTransfer} event - check Ownable
      */
-    
-
     // solhint-disable-next-line func-name-mixedcase
     function __IDToken_init(string memory uri_) public initializer virtual override notZeroAddress(_msgSender()) {
         __EIP712_init('BitBucks', '1.0.0');
         __ERC1155_init(uri_);
-        __Blacklist_init();  
         __Manager_init();
         __UUPSUpgradeable_init();
         __Pausable_init();
@@ -174,13 +168,13 @@ contract IDToken is
     virtual 
     override 
     availIds 
-    NotBlacklisted 
+    NotBlacklisted(_msgSender()) 
     whenNotPaused 
     nonReentrant 
     {
         if(balanceOf(_msgSender(), id) != 0) 
             revert IDToken_IdMinted(_msgSender(), balanceOf(_msgSender(), id));
-
+        // solhint-disable-next-line not-rely-on-time
         require(block.timestamp < deadline, 'pass deadline');
 
         bytes32 txHash = mintHash(id, deadline, _incrementNonce(_msgSender()));
@@ -211,7 +205,7 @@ contract IDToken is
      * 
      * Emits a {TransferSingle} - check ERC1155
      */
-    function burn(address from, uint256 id, bytes calldata signature) public virtual override availIds NotBlacklisted whenNotPaused {
+    function burn(address from, uint256 id, bytes calldata signature) public virtual override availIds whenNotPaused {
        
         bytes32 txHash = burnHash(from, id, _incrementNonce(_msgSender()));
         if(!verifySignature(_msgSender(), txHash, signature))
@@ -240,32 +234,52 @@ contract IDToken is
      * 
      * Emits a {TransferSingle} - check ERC1155
      */
-
-
-    function transferBusiness(address from, address to, bytes[] memory signatures) public virtual override NotBlacklisted whenNotPaused {
+    function transferBusiness
+    (
+        address from, 
+        address to, 
+        bytes[] memory signatures
+    ) 
+    public 
+    virtual 
+    override 
+    NotBlacklisted(from) 
+    NotBlacklisted(to)
+    whenNotPaused 
+    {
         require(signatures.length == 2, 'Owner and manager signatures are needed');
-
-        bytes32 txHash = keccak256(abi.encode(TRANSFERBUSINESS_TYPEHASH, from, to, _incrementNonce(_msgSender())));
-        bytes32 hash = _hashTypedDataV4(txHash);
-
+      
         address assignee;
         address manager;
 
         for(uint i = 0; i < signatures.length; i++) {
             bytes memory signature = signatures[i];
             if(i == 0) {
-                require(verifySignature(_msgSender(), hash, signature), 'invalid owner signature');
+                require(
+                    verifySignature(
+                        _msgSender(), 
+                        transferHash(from, to, _incrementNonce(_msgSender())), 
+                        signature), 
+                    'invalid owner signature'
+                );
                 assignee = _msgSender();
             } else {
                 require(
                     isManager(_msgSender(), assignee) && 
-                    SignatureCheckerUpgradeable.isValidSignatureNow(_msgSender(), hash, signature), 
+                    SignatureCheckerUpgradeable.isValidSignatureNow(
+                        _msgSender(), 
+                        transferHash(from, to, _incrementNonce(_msgSender())), 
+                        signature), 
                     'invalid manager siganture'
                 );
                 manager = _msgSender();
             }
         }
         _safeTransferFrom(from, to, 1, 1, '');
+    }
+
+    function transferHash(address from, address to, uint256 _nonce) public view returns(bytes32) {
+        return _hashTypedDataV4(keccak256(abi.encode(TRANSFERBUSINESS_TYPEHASH, from, to, _nonce)));    
     }
 
     function verifySignature(address signer, bytes32 txHash, bytes memory signature) public view virtual returns(bool) {

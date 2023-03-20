@@ -8,7 +8,7 @@ import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 
 contract TestIDToken is Initializable, IDToken {
 
-
+    // solhint-disable-next-line const-name-snakecase
     string public constant newURI = 'sasha.com';
 
 

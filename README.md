@@ -27,7 +27,7 @@ The aim of this project is to tokenize everything that worth value, identify ind
 
 *identify yourself or your business from a range of a predetermined identities*
 
-*contract accepts EOA & other contracts as owners, admins will send off-chain cryptographic messages to prospective token minters with a deadline to mint their tokens & verify their signatures on-chain*
+*contract accepts EOA & other contracts as owners, admins will send off-chain cryptographic messages to prospective token minters with a deadline to mint their tokens & verify their signatures off-chain*
 
 *Contract can verify signatures of ECDSA from EOA and of ERC1271 from other contracts*
 
