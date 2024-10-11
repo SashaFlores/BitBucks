@@ -1,73 +1,66 @@
-# BitBucks
-The aim of this project is to tokenize everything that worth value, identify individuals and enterprises, act as a proof of ownership, split payment, or even track medical records.
+## Foundry
 
-## *Dependencies:*
+**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
 
-* *Node v18.13.0*
-* *Ethers.js*
-* *hardhat-deploy*
-* *hardhat-deploy-ethers*
-* *hardhat-chai-matchers*
-* *hardhat-gas-reporter*
-* *hardhat-solhint*
-* *hardhat-network-helpers*
-* *prettier-plugin-solidity*
-* *Solidity Coverage*
-* *MythX*
-* *Slither*
-* *hardhat-etherscan*
+Foundry consists of:
 
-## *Work In Progress:*
+-   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
+-   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
+-   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
+-   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
 
-### *Testing Completed Contracts*
-### *Other Contracts*
+## Documentation
 
-## *Contracts Completed:*
-### *IDToken:*
+https://book.getfoundry.sh/
 
-*identify yourself or your business from a range of a predetermined identities*
+## Usage
 
-*contract accepts EOA & other contracts as owners, admins will send off-chain cryptographic messages to prospective token minters with a deadline to mint their tokens & verify their signatures off-chain*
+### Build
 
-*Contract can verify signatures of ECDSA from EOA and of ERC1271 from other contracts*
+```shell
+$ forge build
+```
 
-### *Stable Token 'BitBucks':*  
+### Test
 
-*Allows authorized minters to mint the exact allowance determined by assigned manager, Currently accepts only cash deposits.*
+```shell
+$ forge test
+```
 
-### *Manager Contract:*
-*Module implemented by any child contract to tailor duties of each manager responsible for array of assignees. the contract deployer can assign an assignee to a manager, change manager, remove assignee, or remove manager. In the child contract you can specify manager duties as you may see fit your needs.*
+### Format
 
-### *Blacklist Contract:*
+```shell
+$ forge fmt
+```
 
-*A light module implemented by any child contracts to blacklist and lift from list accounts with red flags*
+### Gas Snapshots
 
-## *To Run What have been achieved so far after cloning the repository*
+```shell
+$ forge snapshot
+```
 
-* *To install dependencies:*
+### Anvil
 
-        npm i
+```shell
+$ anvil
+```
 
-* *To deploy:*
+### Deploy
 
-    - *default network: hardhat*
-    - *Named Accounts: based on your own set of keys*
-    - *chosen testnet: 'sepolia'*
+```shell
+$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
+```
 
-            npx hardhat deploy
+### Cast
 
+```shell
+$ cast <subcommand>
+```
 
-    - *OR*
+### Help
 
-            npx hardhat deploy --network networkName
-
-* *To Test:*
-
-        npx hardhat test
-
-
-* *To Test a specific test block or tag*
-
-        npx hardhat test --grep 'test tag'
-
-
+```shell
+$ forge --help
+$ anvil --help
+$ cast --help
+```
