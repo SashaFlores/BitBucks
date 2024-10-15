@@ -1,3 +1,221 @@
+// the test repo starts in https://github.com/Cyfrin/foundry-fund-me-cu/blob/main/test/unit/FundMeTest.t.sol
+
+
+
 $ forge init    => empty directory
+
 $ forge init project-name    => project-name
+
 $ forge init --force   => non-empty directory
+
+$ forge compile   => output directory: ABI, bytecode, and more
+
+$ forge build  => output directory: ABI, bytecode, and more
+
+$ anvil      => local chain w/ faked 10 accounts
+
+$ forge --help   => all available commands
+
+$ avil create  => deploy contract
+
+$ history -c  => clear commands history of bash
+
+/* ------------------------------------------ SCRIPT = DEPLOY ------------------------------------ */
+
+$ forge script --help  => all available script commands, we get Wallet options
+
+$ forge script script/nameOfScriptFile.s.sol   => deploy script and return contract address
+
+$ forge script script/DeployScriptName.s.sol --rpc-url $SEPOLIA_RPC_URL --private-key $PRIVATE_KEY --boradcast => deploy script and return contract address (W/O --brodacast will simulate the tx)
+
+$ forge script script/nameOfScriptFile.s.sol:FundFundMe --rpc-url $SEPOLIA_RPC_URL --private-key $PRIVATE_KEY --boradcast => deploys FundFundMe contract exists in nameOfScriptFile script (when script contains more than one contract)
+
+/* ------------------------------ CAST --------------------------------------------------------------*/
+$ cast --to-base 0x7142c dec  => convert 0x7142c to decimal
+
+$ cast --help => all available cast commands
+
+$ cast storage contractAddressOnAnvil storageSlot => returns value occupies storage slot number has to be in local anvil env
+
+$ cast send => send and execute a transaction in the contract
+
+$ cast send --help => all available send commands
+
+$ cast send contarctAddress "functionName(uint256)" typeValue --rpc-url $RPC_URL --private-key $PRIVATE_KEY => invoke store transaction in contactAddress with the funcation input value & signing private key
+
+$ cast call => to read from the blockchain
+
+$ cast call --help => all available call commands
+
+$ cast call contarctAddress "functionName()" => call a view function w/o parameters (if value is hexa)
+
+$ cast --to-base theValueFromViewFunction dec => convert the hexa from the view function to decimal
+
+
+/* ------------------ CHISEL ----------------------------------------------------- */
+
+// chisel allows us to write solidity in our terminal and execute it line by line
+$ chisel => get into shell then type $ !help => all available chisel commands
+
+
+/* ----------------- STORGAE --------------------------------------------------------- */
+
+$ forge inspect contractName storageLayout  // inspect storage layout of contract
+
+-----------------------------------------------------------------------------------
+// GAS CONSUMPTION
+
+$ forge snapshot -m functionNameInTestFile => creates a file .gas-snapshot showing exactly how much gas was used in the function
+
+/* Foundry
+FUNCTION txGasPrice(uint256) external; & function txGasPrice(uint256 newGasPRice) external; => sets tx.gasprice for the rest of the tx
+*/
+
+gasleft() => built-in function in solidity to show much gas left
+
+tx.gasprice =>  built-in function in solidity to tell you current gas price
+
+
+--------------------------------------------------------------------------------------------------
+/*
+Encrypt Keys
+*/
+/// ERC2335 to incrypt keys into JSON format => open an external terminal in root directory
+
+$ cast wallet import defaultKey --private-key --interactive  => Enter private key: paste private key ==> Enter password: password ==> Enter password again: password
+
+$ forge script script/DeployScriptName.s.sol:DeployScriptName --rpc-url http://localhost:8545 --acount defaultKey --sender address --boradcast -vvv --password-file   => deploy script and return contract address but you should have a passord file in root directory
+
+$ cast wallet list => list all keys
+
+// in home directory
+$ cd .foundry/keystores/
+$ ls => list all keys
+$ cat defaultKey => show key details
+$ rm .bash_history => remove bash history
+
+
+
+
+
+/*
+Anything defore `vm.startBroadcast();` is a simulation and not a real tx
+*/
+
+
+
+--------------------------------------------------
+
+# testing
+
+/*
+    1. Unit: 
+        - Testing a specific part of our code
+    2. Integration
+        - Testing how our code works with other parts of our code 
+    3. Forked
+        - Testing our code on a simulated real environment
+    4. Staging
+        - Testing our code in a real environment (testnet/mainnet)
+
+    // Arrange
+        - Set up the test, in withdraw we should have the owner and the contract balances before executing owner withdraw
+         uint256 startingFundMeBalance = address(fundMe).balance;
+         uint256 startingOwnerBalance = fundMe.getOwner().balance;
+    // Act
+        - action, we get the the owner address and then withdraw
+         vm.startPrank(fundMe.getOwner());
+         fundMe.withdraw();
+         vm.stopPrank();
+    // Assert
+        - check the result, we check the owner balance and the contract balance after the withdraw
+         uint256 endingFundMeBalance = address(fundMe).balance;
+         uint256 endingOwnerBalance = fundMe.getOwner().balance;
+         assertEq(endingFundMeBalance, 0);
+         assertEq(
+            startingFundMeBalance + startingOwnerBalance,
+            endingOwnerBalance // + gasUsed
+         );
+*/
+
+/*
+Mock contracts: In HelperConfig.s.sol
+
+    - Mock contracts are used to simulate the behavior of a contract
+    - Mock contracts are used to test the behavior of a contract in a controlled environment
+    - Deploy mocks when we are on alocla anvil chain
+    - keep track of contract address across different chains
+*/
+
+
+function setUp() public {
+    counter = new Counter();
+    counter.setNumber(5);
+}
+/*
+address USER = makeAddr("user");
+creates an address derived from the provided name.
+A label is created for the derived address with the provided name used as the label value
+
+vm.prank(USER) => the next tx will be sent by USER
+
+vm.deal(USER, 1 ether)   => sets the balance of an address who to a new balance
+
+hoax(USER, 1 ether) => sets up a prank from an address that has some ether, so itdoes both prank and deal combined (from forge-std library)
+
+vm.startPrank(USER);                    ---- anything in between startPrank and stopPrank
+fundMe.fund{value: SEND_VALUE}();       ---- is executed by USER
+vm.stopPrank();                         ----
+
+*/
+
+$ forge test -m theFunctionName => run a specific function test in the test file
+
+$ forge test -m theFunctionName -vvv => to get the stacktrace 
+
+// forked chain: the same RPC_URL for the chain you want to fork($SEPOLIA_RPC_URL: to access sepolia rpc url in .env)
+$ forge test -m theFunctionName -vvv --fork-url $SEPOLIA_RPC_URL => run a specific function test in the test file on a forked chain
+
+$ forge coverage --fork-url $SEPOLIA_RPC_URL => to see how much of our code is tested 
+
+
+
+
+
+-------------------------------------------
+# dependencies Installation => install in lib directory
+
+chainlink: https://github.com/smartcontractkit/chainlink-brownie-contracts
+
+$ forge install smartcontractkit/chainlink-brownie-contracts --no-commit => install chainlink @latest version
+
+OR
+
+$ forge install smartcontractkit/chainlink-brownie-contracts@1.2.0 --no-commit => install chainlink @1.2.0 version
+
+OR
+
+$ forge install https://github.com/smartcontractkit/chainlink-brownie-contracts@1.1.1 --no-commit => install chainlink @1.2.0 version
+
+AND
+
+// directs foundry if sees this(@chainlink/contracts) to replace it with this(lib/chainlink-brownie-contracts/contarcts/)
+// so that in sol contract when import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
+remappings = [
+    "@chainlink/contracts/=lib/chainlink-brownie-contracts/contarcts/"
+]
+
+
+
+
+---------------------------------------------------------------------------------------
+
+$ npm install -g @graphprotocol/graph-cli@latest   => install graph-cli
+
+/* ------------------------ MAKE FILE TO AUTOMATE SMART CONTRACT ACTIONS ------------------------------ */
+// Create Makefile in root directoryto check $ make --version
+
+
+
+--------------------------------------------------------------------------------------------------------------------------------------
+Section 4: Smart Contract Lottery: https://github.com/Cyfrin/foundry-smart-contract-lottery-cu/tree/main
