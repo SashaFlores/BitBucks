@@ -201,6 +201,10 @@ AND
 
 // directs foundry if sees this(@chainlink/contracts) to replace it with this(lib/chainlink-brownie-contracts/contarcts/)
 // so that in sol contract when import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
+
+
+$ forge install https://github.com/GoogleCloudPlatform/functions-framework-nodejs --no-commit => install google cloud functions
+
 remappings = [
     "@chainlink/contracts/=lib/chainlink-brownie-contracts/contarcts/"
 ]
@@ -219,3 +223,19 @@ $ npm install -g @graphprotocol/graph-cli@latest   => install graph-cli
 
 --------------------------------------------------------------------------------------------------------------------------------------
 Section 4: Smart Contract Lottery: https://github.com/Cyfrin/foundry-smart-contract-lottery-cu/tree/main
+
+
+
+
+
+
+
+
+-------------------------------------------------------------------------------------------
+env-enc
+
+npx env-enc set-pw	        Sets the password to encrypt and decrypt the environment variable file NOTE: On Windows, this command may show a security confirmation prompt	
+npx env-enc set	            Sets and saves variables to the encrypted environment variable file	
+npx env-enc view	        Shows all currently saved variables in the encrypted environment variable file	
+npx env-enc remove <name>	Removes a variable from the encrypted environment variable file	name: Variable name
+npx env-enc remove-all	    Deletes the encrypted environment variable file	

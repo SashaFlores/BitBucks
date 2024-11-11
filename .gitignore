@@ -12,6 +12,10 @@ docs/
 
 # Dotenv file
 .env
+.env-enc
 
 # misc
 commands.mdx
+
+# Node modules
+node_modules/
